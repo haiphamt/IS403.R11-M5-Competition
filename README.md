@@ -20,6 +20,9 @@ theo ngày cho từng sản phẩm tại từng cửa hàng trong **28 ngày ti�
 ```text
 .
 ├── configs/
+│   ├── data.yaml       # Tên file, đường dẫn và khoảng Train/Validation/Test
+│   ├── sample.yaml     # Mẫu tạm 1.200 chuỗi, chưa chốt C05
+│   ├── features.yaml   # Đặc trưng lõi, lùi ít nhất 28 ngày
 │   └── models/         # Cấu hình các mô hình
 ├── data/
 │   ├── raw/            # Dữ liệu gốc, không đưa lên Git
@@ -33,8 +36,10 @@ theo ngày cho từng sản phẩm tại từng cửa hàng trong **28 ngày ti�
 │   ├── figures/        # Hình phân tích kết quả
 │   └── tables/         # Bảng độ đo và thời gian chạy
 ├── src/
-│   └── m5/             # Mã xử lý dữ liệu, độ đo và mô hình
-├── tests/              # Kiểm tra chia dữ liệu, độ đo và rò rỉ dữ liệu
+│   └── m5/
+│       └── data.py     # Bộ đọc 5 file gốc dùng chung (S05)
+├── tests/
+│   └── test_data.py    # Kiểm tra bộ đọc và tính nhất quán của cấu hình
 ├── .gitignore
 └── requirements.txt
 ```
@@ -52,6 +57,18 @@ sau khi kiểm tra môi trường Colab/Kaggle thực tế.
 
 Tải dữ liệu từ [Kaggle M5 Forecasting – Accuracy](https://www.kaggle.com/competitions/m5-forecasting-accuracy/data)
 và đặt các file gốc vào `data/raw/`. Giữ nguyên tên file tải về.
+
+| Tên file gốc | Vai trò |
+| --- | --- |
+| `calendar.csv` | Lịch, sự kiện và SNAP |
+| `sell_prices.csv` | Giá theo sản phẩm, cửa hàng và tuần |
+| `sales_train_validation.csv` | Doanh số `d_1`–`d_1913` |
+| `sales_train_evaluation.csv` | Doanh số `d_1`–`d_1941` |
+| `sample_submission.csv` | Mẫu định dạng dự báo 28 ngày của cuộc thi |
+
+`sample_submission.csv` không chứa nhãn Test. Không ghép chồng hai file
+`sales_train_*`: chúng có phần lịch sử trùng nhau. D03 dùng
+`sales_train_evaluation.csv` để chia theo các khoảng ngày dưới đây.
 
 ## Quy tắc dữ liệu và đánh giá
 
@@ -74,14 +91,117 @@ và đặt các file gốc vào `data/raw/`. Giữ nguyên tên file tải về.
 ## Bàn giao công việc
 
 - **S01:** bộ khung repo, README, `.gitignore` và `requirements.txt`.
-- **S03:** bổ sung `configs/data.yaml`, `configs/sample.yaml`,
-  `configs/features.yaml`.
+- **S03:** đã có ba file YAML. `sample.yaml` vẫn là cấu hình tạm;
+  chỉ chốt cỡ mẫu sau khi có bằng chứng thời gian chạy ở C05.
 - **S04:** Thanh Tiền đưa bản tóm tắt bài báo vào `paper/summary.md`.
-- **S05:** bổ sung bộ đọc dữ liệu tại `src/m5/data.py`, chạy được trên
-  Colab và Kaggle.
+- **S05:** bộ đọc tại `src/m5/data.py`; kiểm tra trên dữ liệu thật và
+  môi trường được giao bằng các ô ở mục 7.2 hoặc 7.3.
 
-Các thư mục có `.gitkeep` hiện chỉ là vị trí bàn giao, chưa có pipeline
-huấn luyện hoàn chỉnh. Cập nhật lệnh chạy tại README khi từng bước được bàn giao.
+Các thư mục còn `.gitkeep` là vị trí bàn giao cho những bước sau.
+
+## 7. Đọc dữ liệu và kiểm tra môi trường
+
+### 7.1. Máy cá nhân
+
+Chạy từ thư mục repo sau khi cài thư viện:
+
+```bash
+python src/m5/data.py
+```
+
+Bộ đọc ưu tiên đường dẫn truyền bằng `--data-dir`, sau đó đến biến môi trường
+`M5_DATA_DIR`, rồi `data/raw/` của repo và các thư mục con của `/kaggle/input`.
+Nếu có nhiều bộ M5 trong Kaggle Input, truyền rõ đường dẫn để tránh đọc nhầm.
+Ví dụ:
+
+```bash
+python src/m5/data.py --data-dir "D:/datasets/M5"
+python src/m5/data.py --data-dir "D:/datasets/M5" --nrows 10
+```
+
+`--nrows 10` chỉ đọc tối đa 10 dòng **mỗi file** để kiểm tra nhanh việc đọc CSV.
+Không dùng chế độ này làm bằng chứng đọc toàn bộ file ở S06 hoặc đo thời gian
+huấn luyện 10 chuỗi ở C01–C04/C06.
+
+Kiểm tra mã bằng bộ CSV giả lập nhỏ, không cần tải dữ liệu M5:
+
+```bash
+python -m unittest discover -s tests -v
+```
+
+### 7.2. Google Colab
+
+Tải và giải nén đủ 5 file gốc vào một thư mục Google Drive của bạn.
+Trong notebook Colab mới, chạy ô chuẩn bị:
+
+```python
+from google.colab import drive
+drive.mount("/content/drive")
+
+!git clone https://github.com/haiphamt/IS403.R11-M5-Competition.git /content/IS403.R11-M5-Competition
+%cd /content/IS403.R11-M5-Competition
+!python -m pip install -q pandas PyYAML
+```
+
+Chạy ô đọc dữ liệu; sửa `DATA_DIR` đúng với thư mục bạn đã giải nén:
+
+```python
+import sys
+sys.path.insert(0, "src")
+from m5.data import load_raw_data
+
+DATA_DIR = "/content/drive/MyDrive/M5"
+raw = load_raw_data(DATA_DIR)
+for name, table in raw.items():
+    print(f"{name}: {table.shape[0]:,} rows x {table.shape[1]:,} columns")
+```
+
+Nếu repo đã tồn tại trong phiên notebook, dùng `git pull --ff-only` trong thư
+mục repo để cập nhật thay vì chạy lại ô clone.
+
+### 7.3. Kaggle Notebook
+
+Trong notebook của bạn, thêm bộ dữ liệu cuộc thi **M5 Forecasting – Accuracy**
+vào **Input** và bật Internet để lấy mã nguồn. Chạy ô chuẩn bị:
+
+```python
+!git clone https://github.com/haiphamt/IS403.R11-M5-Competition.git /kaggle/working/IS403.R11-M5-Competition
+%cd /kaggle/working/IS403.R11-M5-Competition
+!python -m pip install -q pandas PyYAML
+```
+
+Chạy ô đọc dữ liệu; bộ đọc tự tìm đủ 5 file dưới `/kaggle/input`:
+
+```python
+import sys
+sys.path.insert(0, "src")
+from m5.data import load_raw_data
+
+raw = load_raw_data()
+for name, table in raw.items():
+    print(f"{name}: {table.shape[0]:,} rows x {table.shape[1]:,} columns")
+```
+
+Không cần GPU để đọc CSV. Bộ đọc giữ nguyên giá thiếu và không thực hiện
+chọn mẫu, chia tập, tạo đặc trưng hay huấn luyện mô hình.
+
+## 10. Ghi nhận kết quả kiểm tra (S06)
+
+Mỗi người lưu liên kết notebook, ngày chạy, nền tảng, phiên bản Python/pandas,
+CPU/RAM và toàn bộ bảng số dòng/số cột vào bằng chứng của task S06.
+Khi dùng bộ Kaggle đầy đủ, đối chiếu:
+
+| Bảng | Số dòng | Số cột |
+| --- | ---: | ---: |
+| calendar | 1.969 | 14 |
+| sell_prices | 6.841.121 | 4 |
+| sales_train_validation | 30.490 | 1.919 |
+| sales_train_evaluation | 30.490 | 1.947 |
+| sample_submission | 60.980 | 29 |
+
+Ghi lỗi đường dẫn, file thiếu hoặc sai cột tại đây hoặc trong ghi chú task
+để cả nhóm sửa chung. Việc chạy thành công các kiểm thử với CSV giả lập
+không thay thế bằng chứng chạy trên dữ liệu thật ở Colab/Kaggle.
 
 ## Tài nguyên gốc
 

@@ -1,0 +1,16 @@
+dataset: m5-forecasting-accuracy
+paths:
+  raw: data/raw
+  processed: data/processed
+  kaggle_input: /kaggle/input
+files:
+  calendar: calendar.csv
+  sell_prices: sell_prices.csv
+  sales_train_validation: sales_train_validation.csv
+  sales_train_evaluation: sales_train_evaluation.csv
+  sample_submission: sample_submission.csv
+forecast_horizon: 28
+splits:
+  train: [1, 1885]
+  validation: [1886, 1913]
+  test: [1914, 1941]

@@ -1,0 +1,13 @@
+# C05 se chot sau khi co bang thoi gian C01-C04 va C06.
+status: provisional
+seed: 42
+n_series: 1200
+stratify_by: [store_id, cat_id]
+n_stores: 10
+n_categories: 3
+series_per_stratum: 40
+output: data/sample_series_ids.csv
+fallback:
+  n_series: 300
+  series_per_stratum: 10
+  requires_runtime_evidence: true

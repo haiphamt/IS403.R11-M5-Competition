@@ -1,0 +1,30 @@
+forecast_horizon: 28
+recursive: false
+lags: [28, 35, 42]
+rolling:
+  shift: 28
+  windows: [7, 28]
+  statistics: [mean, std]
+calendar:
+  - wday
+  - month
+  - year
+  - event_name_1
+  - event_type_1
+  - event_name_2
+  - event_type_2
+snap: [snap_CA, snap_TX, snap_WI]
+categorical:
+  - item_id
+  - dept_id
+  - cat_id
+  - store_id
+  - state_id
+  - event_name_1
+  - event_type_1
+  - event_name_2
+  - event_type_2
+price:
+  column: sell_price
+  missing_indicator: price_missing
+  fill_missing: false

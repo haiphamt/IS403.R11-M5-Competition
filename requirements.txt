@@ -1,0 +1,12 @@
+# Chot phien ban sau khi kiem tra moi truong Colab/Kaggle.
+numpy
+pandas
+pyarrow
+PyYAML
+statsforecast
+scikit-learn
+lightgbm
+xgboost
+catboost
+optuna
+matplotlib

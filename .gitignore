@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+.pytest_cache/
+.venv/
+venv/
+
+# Local credentials
+.env
+.env.*
+!.env.example
+kaggle.json
+
+# Raw and processed datasets
+data/raw/*
+!data/raw/.gitkeep
+data/processed/*
+!data/processed/.gitkeep
+
+# Saved model artifacts
+*.pkl
+*.pickle
+*.joblib
+*.cbm
+
+# Operating system files
+.DS_Store
+Thumbs.db
+Desktop.ini

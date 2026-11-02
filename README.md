@@ -189,6 +189,9 @@ Có thể dùng notebook chung
 [`00_data_check_and_seasonal_naive.ipynb`](notebooks/00_data_check_and_seasonal_naive.ipynb)
 để ghi số dòng/cột, thông tin môi trường và kết quả C04 thành một ZIP nhỏ.
 [Mở notebook bằng Google Colab](https://colab.research.google.com/github/haiphamt/IS403.R11-M5-Competition/blob/main/notebooks/00_data_check_and_seasonal_naive.ipynb).
+Nếu nút chọn tệp trong ô kết quả không hoạt động, dùng **Files → Upload to
+session storage** của Colab để tải ZIP vào `/content` trước khi chạy ô nạp
+dữ liệu. Notebook tự nhận một ZIP M5 hợp lệ đã có trong phiên.
 
 ## 8. Chạy thử Seasonal Naive (C04)
 

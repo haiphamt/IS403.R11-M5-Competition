@@ -1,0 +1,26 @@
+{
+  "task": "C04",
+  "runtime": "local",
+  "recorded_at": "2026-11-02T13:35:32.558853+07:00",
+  "python": "3.12.14",
+  "pandas": "3.0.1",
+  "numpy": "2.3.5",
+  "operating_system": "Windows",
+  "processor": "Intel64 Family 6 Model 140 Stepping 2, GenuineIntel",
+  "logical_cpu_count": 8,
+  "n_series": 10,
+  "repeats": 1000,
+  "series_selection": "first rows of sales_train_validation.csv; runtime pilot, not D02 sample",
+  "train_range": [
+    1,
+    1885
+  ],
+  "horizon": 28,
+  "season_length": 7,
+  "mean_seconds_per_forecast": 7.91585e-06,
+  "configured_sample_n_series": 1200,
+  "estimated_sample_forecast_seconds": 0.00949902,
+  "timing_scope": "forecast call including input validation; excludes CSV loading and file writes",
+  "sample_decision": "unchanged; C05 still requires timing evidence from other models",
+  "test_set_used": false
+}

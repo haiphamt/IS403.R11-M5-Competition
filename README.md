@@ -185,6 +185,34 @@ for name, table in raw.items():
 Không cần GPU để đọc CSV. Bộ đọc giữ nguyên giá thiếu và không thực hiện
 chọn mẫu, chia tập, tạo đặc trưng hay huấn luyện mô hình.
 
+Có thể dùng notebook chung
+[`00_data_check_and_seasonal_naive.ipynb`](notebooks/00_data_check_and_seasonal_naive.ipynb)
+để ghi số dòng/cột, thông tin môi trường và kết quả C04 thành một ZIP nhỏ.
+[Mở notebook bằng Google Colab](https://colab.research.google.com/github/haiphamt/IS403.R11-M5-Competition/blob/main/notebooks/00_data_check_and_seasonal_naive.ipynb).
+
+## 8. Chạy thử Seasonal Naive (C04)
+
+```bash
+python scripts/benchmark_seasonal_naive.py
+```
+
+Mã mô hình ở `src/m5/seasonal_naive.py`: lặp lại 7 ngày cuối của lịch sử
+để dự báo 28 ngày. Công thức tham khảo:
+[Seasonal naïve, Forecasting: Principles and Practice](https://otexts.com/fpp3/toolbox.html#seasonal-na%C3%AFve-method).
+
+Lần thử dùng 10 chuỗi đầu từ dữ liệu gốc, chỉ lấy `d_1`–`d_1885` làm lịch sử.
+Không đọc nhãn Test để chọn cấu hình hoặc tính sai số. Danh sách 10 chuỗi
+này phục vụ đo thời gian, không thay cho mẫu phân tầng D02.
+
+Mỗi chuỗi được làm nóng một lần rồi đo trung bình 1.000 lần gọi hàm dự báo.
+File `results/tables/c04_seasonal_naive_runtime_<môi trường>.csv` ghi thời gian
+từng chuỗi; file JSON cùng tên `summary` ghi môi trường và ước lượng cho
+1.200 chuỗi. Số đo chỉ gồm gọi hàm dự báo và kiểm tra đầu vào, không gồm
+đọc CSV, lưu file hay toàn bộ pipeline.
+
+Giữ nguyên mẫu tạm 1.200 chuỗi cho đến khi C05 có số đo của ETS/Croston,
+XGBoost/CatBoost, LightGBM và Linear Regression.
+
 ## 10. Ghi nhận kết quả kiểm tra (S06)
 
 Mỗi người lưu liên kết notebook, ngày chạy, nền tảng, phiên bản Python/pandas,

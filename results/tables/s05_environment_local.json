@@ -1,0 +1,15 @@
+{
+  "task": "S05",
+  "runtime": "local",
+  "all_rows_read": true,
+  "recorded_at": "2026-11-02T13:41:09.635280+07:00",
+  "python": "3.12.14",
+  "pandas": "3.0.1",
+  "numpy": "2.3.5",
+  "pyyaml": "6.0.3",
+  "os": "Windows",
+  "logical_cpu_count": 8,
+  "reader_commit": "17506132f857f07ff8c822e233b5d9ce44e7a2fd",
+  "source": "https://www.kaggle.com/competitions/m5-forecasting-accuracy/data",
+  "cloud_validation": "pending"
+}

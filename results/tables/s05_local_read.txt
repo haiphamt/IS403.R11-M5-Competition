@@ -1,0 +1,5 @@
+calendar                       1,969 rows x 14 columns
+sell_prices                6,841,121 rows x 4 columns
+sales_train_validation        30,490 rows x 1,919 columns
+sales_train_evaluation        30,490 rows x 1,947 columns
+sample_submission             60,980 rows x 29 columns

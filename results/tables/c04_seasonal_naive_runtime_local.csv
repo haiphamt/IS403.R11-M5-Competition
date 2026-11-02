@@ -1,0 +1,11 @@
+series_id,history_days,horizon,season_length,repeats,seconds_per_forecast
+HOBBIES_1_001_CA_1_validation,1885,28,7,1000,8.1788e-06
+HOBBIES_1_002_CA_1_validation,1885,28,7,1000,8.891400000000001e-06
+HOBBIES_1_003_CA_1_validation,1885,28,7,1000,7.4231e-06
+HOBBIES_1_004_CA_1_validation,1885,28,7,1000,7.5262e-06
+HOBBIES_1_005_CA_1_validation,1885,28,7,1000,7.3381e-06
+HOBBIES_1_006_CA_1_validation,1885,28,7,1000,7.7321e-06
+HOBBIES_1_007_CA_1_validation,1885,28,7,1000,7.5929e-06
+HOBBIES_1_008_CA_1_validation,1885,28,7,1000,7.8563e-06
+HOBBIES_1_009_CA_1_validation,1885,28,7,1000,8.2787e-06
+HOBBIES_1_010_CA_1_validation,1885,28,7,1000,8.3409e-06

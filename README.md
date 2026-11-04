@@ -216,6 +216,24 @@ từng chuỗi; file JSON cùng tên `summary` ghi môi trường và ước lư
 Giữ nguyên mẫu tạm 1.200 chuỗi cho đến khi C05 có số đo của ETS/Croston,
 XGBoost/CatBoost, LightGBM và Linear Regression.
 
+## 9. Chạy thử ETS và Croston (C01)
+
+```bash
+python scripts/benchmark_ets_croston.py
+```
+
+Mã mô hình ở `src/m5/ets_croston.py`, dùng `statsforecast`: `AutoETS` chọn
+cấu hình ETS theo AICc, `CrostonClassic` cho nhu cầu gián đoạn; cả hai chu kỳ
+7 ngày, dự báo 28 ngày, không cắt giá trị âm về 0.
+
+Cách chọn chuỗi và phạm vi dữ liệu giống mục 8. Mỗi chuỗi được làm nóng một
+lần rồi đo trung bình `--repeats` lần (mặc định 3) gồm huấn luyện và dự báo.
+File `results/tables/c01_ets_croston_runtime_<môi trường>.csv` ghi thời gian
+từng chuỗi và mô hình; file JSON `summary` ghi môi trường, phiên bản
+`statsforecast` và ước lượng cho 1.200 chuỗi, một lượt và Validation + Test.
+Notebook chạy trên Colab/Kaggle:
+[`01_ets_croston_pilot.ipynb`](notebooks/01_ets_croston_pilot.ipynb).
+
 ## 10. Ghi nhận kết quả kiểm tra (S06)
 
 Mỗi người lưu liên kết notebook, ngày chạy, nền tảng, phiên bản Python/pandas,

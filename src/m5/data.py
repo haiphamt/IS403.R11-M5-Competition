@@ -62,8 +62,8 @@ def _find_raw_dir(config, data_dir):
     )
 
 
-def load_raw_data(data_dir=None, *, nrows=None, config_path=DEFAULT_CONFIG):
-    """Return five DataFrames keyed by the names in configs/data.yaml.
+def load_raw_data(data_dir=None, *, nrows=None, config_path=DEFAULT_CONFIG, table_names=None):
+    """Read all five M5 tables or the specified table names.
 
     data_dir overrides M5_DATA_DIR, then local data/raw and Kaggle are checked.
     nrows limits EVERY file for a quick I/O smoke check, not a model benchmark.
@@ -78,7 +78,8 @@ def load_raw_data(data_dir=None, *, nrows=None, config_path=DEFAULT_CONFIG):
 
     directory = _find_raw_dir(config, data_dir)
     tables = {}
-    for name, filename in config["files"].items():
+    for name in config["files"] if table_names is None else table_names:
+        filename = config["files"][name]
         path = directory / filename
         columns = pd.read_csv(path, nrows=0).columns
         absent = set(REQUIRED_COLUMNS[name]) - set(columns)

@@ -252,6 +252,23 @@ Ghi lỗi đường dẫn, file thiếu hoặc sai cột tại đây hoặc tron
 để cả nhóm sửa chung. Việc chạy thành công các kiểm thử với CSV giả lập
 không thay thế bằng chứng chạy trên dữ liệu thật ở Colab/Kaggle.
 
+## 11. Chạy thử LightGBM (C03)
+
+```bash
+python scripts/benchmark_lightgbm.py --data-dir "<thư mục chứa 5 CSV gốc>"
+```
+
+Mã mô hình ở `src/m5/lightgbm_forecast.py`: mỗi chuỗi một `LGBMRegressor`
+(tham số mặc định, `random_state=42`), dự báo 28 ngày bằng đặc trưng trễ
+28/35/42 và trung bình, độ lệch chuẩn trượt 7 và 28 ngày, lùi 28 ngày để không
+đọc giá trị tương lai. Bản pilot chưa dùng lịch, SNAP, giá và biến phân loại
+trong `configs/features.yaml`; các đặc trưng này được thêm ở bước pipeline đầy đủ.
+
+Cách chọn chuỗi và phạm vi dữ liệu giống mục 8 và 9. File
+`results/tables/c03_lightgbm_runtime_<môi trường>.csv` và
+`c03_lightgbm_summary_<môi trường>.json` ghi thời gian từng chuỗi và ước lượng
+cho 1.200 chuỗi. Chạy trên Colab/Kaggle để có số đo thật ở môi trường của nhóm.
+
 ## Tài nguyên gốc
 
 - [Cuộc thi M5 Forecasting – Accuracy](https://www.kaggle.com/competitions/m5-forecasting-accuracy)

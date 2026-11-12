@@ -1,0 +1,37 @@
+{
+  "task": "C03",
+  "owner": "Thủy Tiên",
+  "recorded_at": "2026-11-12T23:40:08.950672+07:00",
+  "runtime": "colab",
+  "python": "3.13.18",
+  "logical_cpu_count": 2,
+  "ram": "               total        used        free      shared  buff/cache   available\nMem:            12Gi       1.8Gi       7.8Gi       2.4Mi       3.5Gi        10Gi\nSwap:             0B          0B          0B\n",
+  "nproc": "2",
+  "input_checks": [
+    {
+      "filename": "calendar.csv",
+      "rows": 1969,
+      "columns": 13,
+      "sha256": "568d0fe5f41790142379698732908e4e57432c1c6396f3f59fb880a9c2b54231",
+      "source": "https://drive.google.com/file/d/1rAO0QS5HPoUprlzw5mGll572yqnChPjU/view"
+    },
+    {
+      "filename": "sales_train_validation.csv",
+      "rows": 30490,
+      "columns": 1918,
+      "sha256": "a4bb02b2f900543fdc78f5b4b4dc32eb606ae78bbb98baf088a976aa7f8c1d07",
+      "source": "https://drive.google.com/file/d/1QGNDfsD7rxzCCbEY3-Y1mcbLcgKbofw4/view"
+    },
+    {
+      "filename": "sell_prices.csv",
+      "rows": 6841121,
+      "columns": 4,
+      "sha256": "5c7cf045b1abbdc8d5007809c40b3682c5216075937f93e2cef01caddc4a30d9",
+      "source": "https://drive.google.com/file/d/1_-7xIYafyMG45E157DJh6sgGvOHswaO1/view"
+    }
+  ],
+  "s06_scope": "3/5 required CSVs verified; NOT a completed S06 evidence package",
+  "calendar_transformation": "Original calendar.csv retained; verified 1969 consecutive dates starting 2011-01-29; derived d_1..d_1969 from date into separate pilot_input/calendar.csv. No sales changed.",
+  "sales_id_transformation": "Original sales CSV retained; derived unique id=item_id+store_id+validation suffix in separate pilot_input file; no sales values changed.",
+  "pilot_calendar_sha256": "9f49e5f1d4b81b6fce0ed47ef52557c2cca1c5d4b2722a332c3f8084d68bc66e"
+}

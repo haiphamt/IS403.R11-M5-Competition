@@ -1,0 +1,102 @@
+{
+  "task": "C03",
+  "run_id": "c03_lightgbm_colab_20261112T164342Z_82d16d27",
+  "status": "measured_pending_review",
+  "runtime": "colab",
+  "recorded_at": "2026-11-12T23:43:48.961533+07:00",
+  "python": "3.13.18",
+  "packages": {
+    "lightgbm": "4.6.0",
+    "numpy": "2.4.6",
+    "pandas": "2.2.3",
+    "scikit-learn": "1.6.1",
+    "PyYAML": "6.0.3"
+  },
+  "os": "Linux-6.6.159+-x86_64-with-glibc2.39",
+  "processor": "x86_64",
+  "logical_cpu_count": 2,
+  "git_commit": null,
+  "source_sha256": {
+    "scripts/benchmark_lightgbm.py": "f05bde56e2d57b52db81ea6b9ec0866222345af4082b2a09ba3988bf53353512",
+    "src/m5/lightgbm_pilot.py": "886285bb1c750fae9a6cdcd4bd8bed2f57b8dced6b56de14f01070dda121286e",
+    "src/m5/data.py": "f55703cb99e40abc94991becfe72304bf0e1c36e264fe9c421c97459f0b428d2",
+    "configs/data.yaml": "1bb2b0bd687e02c9f3cb2736a6ab47ef62baff88330524ea81da42a5ab323719",
+    "configs/models/lightgbm_c03.yaml": "89e74e6cdacc154f26ebef8613429f3bbe258e6b1c48bd74e0ef738d5ddca207",
+    "configs/sample.yaml": "ea2bf3cfcd1c5550fd77b08db34fc69aa66a20b848dcd474602375e14c25389f"
+  },
+  "input_subset_sha256": {
+    "sales_train_only": "2e1d5d894a51be651f8e40b7e5b6b4c29c9b010a199eae4e6b2b4eeac548533b",
+    "calendar_through_validation": "ace73ee8941107ddff0db9a35322e525a927a87da73311b26fdf3619ffdf66c0",
+    "selected_weekly_prices": "ff30789d75d9d33bc1e4bf3b050a20f528566e2898ee1fac3094522b3ef5dea5"
+  },
+  "source": "https://www.kaggle.com/competitions/m5-forecasting-accuracy/data",
+  "series_selection": "first 10 rows of original sales_train_validation.csv, comparable with C04 pilot; not D02 stratified sample",
+  "series_ids": [
+    "HOBBIES_1_001_CA_1_validation",
+    "HOBBIES_1_002_CA_1_validation",
+    "HOBBIES_1_003_CA_1_validation",
+    "HOBBIES_1_004_CA_1_validation",
+    "HOBBIES_1_005_CA_1_validation",
+    "HOBBIES_1_006_CA_1_validation",
+    "HOBBIES_1_007_CA_1_validation",
+    "HOBBIES_1_008_CA_1_validation",
+    "HOBBIES_1_009_CA_1_validation",
+    "HOBBIES_1_010_CA_1_validation"
+  ],
+  "n_series": 10,
+  "repeats": 3,
+  "train_range": [
+    1,
+    1885
+  ],
+  "effective_training_target_range": [
+    56,
+    1885
+  ],
+  "forecast_range": [
+    1886,
+    1913
+  ],
+  "horizon": 28,
+  "validation_labels_used": false,
+  "test_labels_used": false,
+  "model_strategy": "one independent model per series; no global-model scalability claim",
+  "model_parameters": {
+    "boosting_type": "gbdt",
+    "class_weight": null,
+    "colsample_bytree": 1.0,
+    "importance_type": "split",
+    "learning_rate": 0.1,
+    "max_depth": -1,
+    "min_child_samples": 20,
+    "min_child_weight": 0.001,
+    "min_split_gain": 0.0,
+    "n_estimators": 100,
+    "n_jobs": 2,
+    "num_leaves": 31,
+    "objective": "regression",
+    "random_state": 42,
+    "reg_alpha": 0.0,
+    "reg_lambda": 0.0,
+    "subsample": 1.0,
+    "subsample_for_bin": 200000,
+    "subsample_freq": 0,
+    "deterministic": true,
+    "force_col_wise": true,
+    "verbosity": -1
+  },
+  "prediction_postprocessing": "clip negative predictions to zero; no rounding",
+  "timing_scope": "fit includes estimator construction and dataset conversion; predict includes validation and clipping; excludes feature preparation, CSV I/O, warm-up, checks and output writes",
+  "warmup": "one fit/predict on the first selected series, excluded from repeat timings",
+  "warmup_seconds": 0.08748647500033258,
+  "feature_seconds_total": 0.23546420100001342,
+  "mean_fit_predict_seconds_per_series": 0.1885023970332592,
+  "median_fit_predict_seconds_per_series": 0.10620811883321342,
+  "configured_sample_n_series": 1200,
+  "estimated_sample_fit_predict_seconds": 226.20287643991102,
+  "estimate_caveat": "linear extrapolation for this per-series CPU configuration only; excludes I/O/features; first 10 series are not representative; not a measured full-sample or global-model runtime",
+  "sample_decision": "unchanged; C05 must combine evidence from all models",
+  "wall_seconds_before_export": 10.687501060000159,
+  "reviewer": "Thanh Tiền",
+  "approval": "pending; do not auto-mark Xong"
+}

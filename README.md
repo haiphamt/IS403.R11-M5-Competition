@@ -216,6 +216,36 @@ từng chuỗi; file JSON cùng tên `summary` ghi môi trường và ước lư
 Giữ nguyên mẫu tạm 1.200 chuỗi cho đến khi C05 có số đo của ETS/Croston,
 XGBoost/CatBoost, LightGBM và Linear Regression.
 
+## 9. Pilot thời gian LightGBM (C03)
+
+Chạy tuần tự [`01_lightgbm_c03.ipynb`](notebooks/01_lightgbm_c03.ipynb)
+trên Colab CPU. Notebook lấy mã từ nhánh `thuytien`, tải ba CSV nguồn đã chỉ
+rõ và giữ nguyên file gốc. Với bản Drive thiếu khóa `d`/`id`, notebook kiểm tra
+chuỗi ngày liên tục và ID item/store rồi tạo bản đầu vào riêng; phép chuyển đổi
+và hash được ghi trong metadata. Không đưa các CSV lớn vào Git.
+
+```bash
+python scripts/benchmark_lightgbm.py --data-dir /duong/dan/M5 --repeats 3
+```
+
+Pilot fit riêng 10 chuỗi đầu, chỉ dùng doanh số `d_1`–`d_1885` để dự báo 28 ngày.
+`src/m5/lightgbm_pilot.py` tạo lag 28/35/42, rolling 7/28 đã shift 28,
+lịch/sự kiện/SNAP/giá; giữ giá thiếu NaN kèm cờ. Dùng thông tin lịch/giá đã biết
+theo protocol. Tham số học mặc định và điều khiển CPU/seed nằm trong
+`configs/models/lightgbm_c03.yaml`. Không tuning, không dùng nhãn Validation/Test.
+
+Run Colab ngày 12/11/2026 tại
+[`results/tables/c03_lightgbm_colab_20261112T164342Z_82d16d27/`](results/tables/c03_lightgbm_colab_20261112T164342Z_82d16d27):
+30 dòng đo, bảng trung bình 10 chuỗi, summary và metadata nguồn/môi trường.
+Hình ở [`results/figures/`](results/figures/c03_lightgbm_colab_20261112T164342Z_82d16d27/runtime_by_series.png).
+Thời gian fit + predict trung bình **0,1885 giây/chuỗi**; ngoại suy 1.200 chuỗi
+**226,20 giây**, không gồm I/O, tạo feature, warm-up và ghi file.
+Đây là pilot thời gian, không phải lần chạy Validation M04 hay thời gian đo
+toàn mẫu. Mẫu 1.200 chuỗi vẫn tạm thời; quyết định C05 cần số đo của mọi mô hình.
+
+Kiểm thử: `python -m unittest discover -s tests -v`.
+Các kiểm thử dùng CSV giả chỉ kiểm tra mã, không thay kết quả M5 thật.
+
 ## 10. Ghi nhận kết quả kiểm tra (S06)
 
 Mỗi người lưu liên kết notebook, ngày chạy, nền tảng, phiên bản Python/pandas,

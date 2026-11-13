@@ -28,3 +28,7 @@ data/processed/*
 .DS_Store
 Thumbs.db
 Desktop.ini
+
+# Local personal playbook
+/ThuyTien_playbook/
+/SOURCES.md

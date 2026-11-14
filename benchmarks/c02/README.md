@@ -4,6 +4,8 @@ Thanh Tiền · IS403.R11 · Bàn giao nội bộ · Soạn/đối chiếu ngu�
 
 Tài liệu theo task được gom trong thư mục này: [hồ sơ kiểm chứng và kết quả](VALIDATION.md), dependencies tại `requirements.txt`. Mã nguồn, notebook và test nằm trong các thư mục chung của repo. Nội dung bàn giao được ghi trong mô tả PR và Jira; hồ sơ cũ chỉ giữ ở `local/c02/`.
 
+[HTML có code và kết quả thực nghiệm](../../results/c02/C02_20261113T093749_327948+0700/c02_benchmark_xgb_cat.html) được xuất trực tiếp từ notebook đã chạy, run `C02_20261113T093749_327948+0700`. Tải tệp HTML và mở bằng trình duyệt để xem đầy đủ. Phần chạy của C02 yêu cầu 10 chuỗi; đánh giá Test hoặc mẫu 1.200 chuỗi thuộc các task sau.
+
 ## 1. C02 cần hoàn thành điều gì?
 
 Theo Task_Tracker, C02 là **viết code XGBoost và CatBoost, chạy thử trên 10 chuỗi và ghi thời gian**; Thủy Tiên xác nhận. Đây là thử tính khả thi trước khi C05 chốt cỡ mẫu, chưa phải M05/M06 trên mẫu chính thức. C02 không yêu cầu tuning, chạy Test, tạo bài nộp dự đoán Kaggle hay tái lập lời giải vô địch.

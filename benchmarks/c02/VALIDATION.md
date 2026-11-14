@@ -8,6 +8,8 @@ Notebook Colab được chạy xong với run ID `C02_20261113T093749_327948+070
 
 Notebook được mở qua URL Colab nhưng metadata lần chạy báo `platform=Kaggle`; chưa xác minh vì sao nhãn này xuất hiện. Cần kiểm tra nhãn nền tảng trước khi dùng như bằng chứng xác định nơi chạy. Thủy Tiên chưa xác nhận kết quả. Toàn bộ test suite chưa được chạy lại sau khi thêm regression test cho thông báo thiếu thư viện; các kết quả test cũ bên dưới chỉ áp dụng cho phiên bản/fixture ghi tại thời điểm đó.
 
+Ngày 14/11/2026 đã xuất [HTML đầy đủ code và output](../../results/c02/C02_20261113T093749_327948+0700/c02_benchmark_xgb_cat.html) trực tiếp từ notebook đã thực thi. Phần chạy theo yêu cầu C02 (code hai mô hình, 10 chuỗi, bảng thời gian) đã có bằng chứng; Test/mẫu 1.200 chuỗi không phải điều kiện hoàn tất phần chạy của C02. Việc người xác nhận duyệt là bước nghiệm thu riêng.
+
 ## QA lịch sử ngày 02/11/2026
 
 | Kiểm tra | Kết quả |
@@ -153,3 +155,11 @@ Guide, hồ sơ kiểm chứng và dependencies nằm trong `benchmarks/c02/`. H
 Mã local sau khi sửa đường dẫn có SHA256 `f4d5052be495762a7116b48fb9b3eb032e73d8d693282f085563a0a437b452fa`. Thay đổi chỉ ở đường dẫn tài liệu/cài dependencies và metadata hash; không thay công thức, split, seed, mô hình hoặc cách đo. Nguồn của lần chạy cloud vẫn có SHA256 `6dc6e03110a8806bcf84af5582fe226368b17a0d2e65cc7f5fbe980885c6b36f`; không gắn output cũ vào notebook nguồn mới.
 
 Đã đọc lại notebook Drive sau khi người dùng lưu kết quả, không có traceback. Bản nguyên byte được giữ ở `local/c02/C02_20261113T093749_327948+0700.ipynb`, SHA256 `f73e53ce98aa00e03e59472ce47f11843a798a2dc7843b386b9bc499c4cb30b7`. Bảng kết quả chính được ghi ở phần đầu tài liệu; nội dung bàn giao dùng trong mô tả PR và bình luận Jira. Chưa tìm thấy CSV/JSON gốc riêng trên Drive; không dựng lại chúng từ bảng đã làm tròn rồi coi là file gốc.
+
+### Xuất HTML ngày 14/11/2026
+
+- Nguồn: notebook có output được giữ nguyên byte từ file Drive, hash `f73e53ce98aa00e03e59472ce47f11843a798a2dc7843b386b9bc499c4cb30b7`. Metadata Drive được đối chiếu vẫn cùng phiên bản lưu ngày 13/11.
+- Công cụ: nbconvert 7.17.2, `--to html --embed-images`; không dùng `--execute`, không chạy lại model, không dựng HTML thay cho output.
+- Tệp: `results/c02/C02_20261113T093749_327948+0700/c02_benchmark_xgb_cat.html`, SHA256 `763329b4d619ea687c36c3a403e8ae4d3dfab046e9ddb9f00ff12d807d1287e1`.
+- Kiểm tra: đủ 9 ô code, 5 bảng DataFrame có lần lượt 10/2/6/10/6 dòng, khớp bảng trong notebook gốc; run ID và số đo khớp. Notebook nguồn không có output lỗi và không bị chỉnh sửa khi xuất.
+- CSV/JSON riêng trong runtime chưa được lấy. Chúng là bằng chứng bổ trợ để giữ đầy đủ số gốc/metadata, không phải yêu cầu chạy thêm Test hoặc tăng mẫu C02. HTML hiện giữ code và các bảng kết quả cần bàn giao. Nếu runtime vẫn còn thư mục kết quả, tải từng file gốc để lưu bền vững.

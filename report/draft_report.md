@@ -2,7 +2,7 @@
 
 **Môn:** Phân tích dữ liệu kinh doanh — IS403.R11. **Nhóm:** 6 (Tuấn Hải, Tuấn Vũ, Thanh Tiền, Thủy Tiên, Thùy Trang). Họ tên đầy đủ và MSSV chờ đối chiếu danh sách chính thức.
 
-> **Tình trạng bản thảo.** Bản thảo nội dung (không định dạng, không template). Mọi con số trong mục 4 phải truy được về `run_id` và bảng trong `results/`. Phần nào ghi *“Chờ kết quả”* là phần chưa có thực nghiệm; không có số liệu bịa.
+> **Tình trạng bản thảo.** Bản thảo nội dung (chưa định dạng, không dùng template), do AI soạn từ kết quả thực nghiệm thật; chưa có thành viên nào review hay đối chiếu. Mọi con số trong mục 4 truy được về `run_id` và bảng trong `results/` (các bảng được sinh tự động bằng `scripts/build_report.py`). Nhóm cần tự: đối chiếu họ tên/MSSV, đọc lại toàn văn các nguồn đánh dấu "chưa đọc lại toàn văn", định dạng và nộp bài.
 
 ## Tóm tắt
 
@@ -97,7 +97,7 @@ Mọi dự báo được cắt $\max(\hat y,0)$ (doanh số không âm), không 
 
 ### 3.10. Tối ưu và kết hợp dự báo
 
-*Chờ quyết định phạm vi (xem mục 4.2).*
+Optuna (LightGBM Tuned), stacking Ridge, Croston SBA và ablation LightGBM bỏ giá/sự kiện **không được chạy** do ưu tiên lõi Validation/Test trong thời gian có hạn (`configs/freeze.yaml`); vì vậy báo cáo chỉ nêu cấu hình mặc định và không có số liệu tuning hay stacking.
 
 ## 4. Thực nghiệm và đánh giá
 

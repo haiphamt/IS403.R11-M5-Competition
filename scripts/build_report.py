@@ -22,18 +22,22 @@ def md(df, floatfmt="{:.3f}"):
     cols = list(df.columns)
     lines = ["| " + " | ".join(map(str, cols)) + " |", "|" + "|".join(["---"] * len(cols)) + "|"]
     for row in df.itertuples(index=False):
-        lines.append("| " + " | ".join(floatfmt.format(v) if isinstance(v, float) else str(v) for v in row) + " |")
+        lines.append("| " + " | ".join(floatfmt.format(v).replace(".", ",") if isinstance(v, float) else str(v) for v in row) + " |")
     return "\n".join(lines)
 
 
+def raw(split):
+    return pd.read_csv(T / split / "metrics_summary.csv").set_index("model").loc[ORDER]  # unrounded values
+
+
 def overall(split):
-    d = pd.read_csv(T / split / f"{split}_overall.csv", index_col=0).loc[ORDER]
+    d = raw(split).join(pd.read_csv(T / split / f"{split}_overall.csv", index_col=0)[["mae_vs_snaive_pct", "rmsse_vs_snaive_pct"]])
     rt = pd.read_csv(T / split / f"{split}_runtime_tradeoff.csv").set_index("model")
     out = pd.DataFrame({"Mô hình": [L[m] for m in d.index], "MAE (macro)": d["macro_mae"].values, "RMSE (macro)": d["macro_rmse"].values,
                         "RMSSE (macro)": d["macro_rmsse"].values, "R² (macro)": d["macro_r2"].values,
-                        "So Seasonal Naive (MAE)": [f"{v:+.1f}%" for v in d["mae_vs_snaive_pct"]],
-                        "So Seasonal Naive (RMSSE)": [f"{v:+.1f}%" for v in d["rmsse_vs_snaive_pct"]],
-                        "fit+predict (s)": [round(float(rt.loc[m, "fit_predict_s"]), 1) for m in d.index]})
+                        "So Seasonal Naive (MAE)": [f"{v:+.1f}%".replace(".", ",") for v in d["mae_vs_snaive_pct"]],
+                        "So Seasonal Naive (RMSSE)": [f"{v:+.1f}%".replace(".", ",") for v in d["rmsse_vs_snaive_pct"]],
+                        "fit+predict (s)": [f"{float(rt.loc[m, 'fit_predict_s']):.1f}".replace(".", ",") for m in d.index]})
     return md(out)
 
 
@@ -45,15 +49,16 @@ def group(split, key, metric="rmsse"):
 
 
 def table(name):
+    special = ("ets_structure", "croston_zp", "lr_coef", "importance")
     split = "test" if name.startswith("test_") else "validation"
-    base = name.split("_", 1)[1]
+    base = name if name in special else name.split("_", 1)[1]
     if base == "overall":
         return overall(split)
     if base in ("demand_class_rmsse", "cat_rmsse", "state_rmsse", "demand_class_mae"):
         key = {"demand_class": "demand_class", "cat": "cat_id", "state": "state"}[base.rsplit("_", 1)[0]]
         return group(split, key, base.rsplit("_", 1)[1])
     if base == "pooled":
-        d = pd.read_csv(T / split / f"{split}_overall.csv", index_col=0).loc[ORDER]
+        d = raw(split)
         out = pd.DataFrame({"Mô hình": [L[m] for m in d.index], "RMSE macro": d["macro_rmse"].values, "RMSE gộp": d["pooled_rmse"].values,
                             "MAE macro": d["macro_mae"].values, "R² không xác định (số chuỗi)": d["n_r2_undefined"].astype(int).values,
                             "RMSSE không xác định (số chuỗi)": d["n_rmsse_undefined"].astype(int).values})
@@ -81,8 +86,9 @@ def table(name):
         run = next(p for p in sorted(RUNS.glob("val-*")) if (p / "diag_ets.csv").exists())
         d = pd.read_csv(run / "diag_ets.csv")
         vc = d["ets_method"].value_counts().rename_axis("Cấu trúc").reset_index(name="Số chuỗi")
-        vc["Tỷ lệ"] = [f"{v / len(d):.1%}" for v in vc["Số chuỗi"]]
-        st = d[["ets_alpha", "ets_beta", "ets_gamma"]].describe().loc[["count", "mean", "50%", "max"]].round(3)
+        vc["Tỷ lệ"] = [f"{v / len(d):.1%}".replace(".", ",") for v in vc["Số chuỗi"]]
+        st = d[["ets_alpha", "ets_beta", "ets_gamma"]].describe().loc[["count", "mean", "50%", "max"]].round(3).astype(object)
+        st.loc["count"] = [int(v) for v in st.loc["count"]]
         return md(vc) + "\n\n*α/β/γ (số chuỗi có tham số, trung bình, trung vị, lớn nhất):*\n\n" + md(st.reset_index().rename(columns={"index": "thống kê"}))
     if base == "croston_zp":
         run = next(p for p in sorted(RUNS.glob("val-*")) if (p / "diag_croston.csv").exists())
@@ -101,7 +107,7 @@ def table(name):
             d = pd.read_csv(run / f)
             d["share"] = d["importance"] / d["importance"].sum()
             d = d.sort_values("share", ascending=False).head(5)
-            rows.append({"Mô hình": name, "Top 5 đặc trưng (tỷ trọng)": "; ".join(f"{a} {b:.1%}" for a, b in zip(d["feature"], d["share"]))})
+            rows.append({"Mô hình": name, "Top 5 đặc trưng (tỷ trọng)": "; ".join(f"{a} {b:.1%}".replace(".", ",") for a, b in zip(d["feature"], d["share"]))})
         return md(pd.DataFrame(rows))
     if base == "runs":
         rows = []
@@ -115,8 +121,8 @@ def table(name):
 
 def main():
     text = REPORT.read_text(encoding="utf-8")
-    pat = re.compile(r"(<!-- TABLE:(\w+) -->\n).*?(\n<!-- /TABLE -->)", re.S)
-    text = pat.sub(lambda m: m.group(1) + table(m.group(2)) + m.group(3), text)
+    pat = re.compile(r"<!-- TABLE:(\w+) -->.*?<!-- /TABLE -->", re.S)
+    text = pat.sub(lambda m: "<!-- TABLE:" + m.group(1) + " -->\n" + table(m.group(1)) + "\n<!-- /TABLE -->", text)
     REPORT.write_text(text, encoding="utf-8")
     print("tables filled:", len(pat.findall(text)))
 

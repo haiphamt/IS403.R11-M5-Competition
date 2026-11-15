@@ -1,0 +1,7 @@
+,win_rate_vs_snaive,tie_rate,median_mae_diff
+linear_regression,0.5892,0.0,-0.0543
+ets,0.6175,0.0042,-0.0678
+croston,0.5975,0.0042,-0.0683
+lightgbm,0.5608,0.0,-0.0459
+xgboost,0.5767,0.0,-0.047
+catboost,0.535,0.0,-0.0264

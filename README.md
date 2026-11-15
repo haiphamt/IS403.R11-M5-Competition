@@ -7,13 +7,34 @@ theo ngày cho từng sản phẩm tại từng cửa hàng trong **28 ngày ti�
 ## Phạm vi thực nghiệm
 
 - Dữ liệu: M5 Forecasting – Accuracy của Walmart.
-- Mẫu mặc định: **1.200 chuỗi**, chọn theo cửa hàng và ngành hàng, seed **42**.
-  Cỡ mẫu được chốt sau khi nhóm đo thời gian chạy thực tế.
+- Mẫu chính thức: **1.200 chuỗi**, chọn theo cửa hàng và ngành hàng, seed **42**
+  (cấu hình đã khóa tại tag `config-freeze`, xem `configs/freeze.yaml`).
 - Mô hình lõi: Seasonal Naive, Linear Regression, ETS, Croston,
   LightGBM Default, XGBoost và CatBoost.
-- Phần có thể cắt khi thiếu thời gian: LightGBM Tuned bằng Optuna và Stacking.
+- Phần tùy chọn (Optuna, Stacking, Croston SBA, ablation LightGBM) **đã bị cắt, không chạy**.
 - Độ đo theo checklist: **MAE, RMSE, RMSSE, R²**, kèm thời gian chạy.
   Phạm vi này được phân biệt với WRMSSE của cuộc thi M5 gốc.
+
+## Kết quả chính (Test d_1914–d_1941, 1.200 chuỗi, chạy một lần sau `config-freeze`)
+
+| Mô hình | RMSSE (macro) | MAE (macro) | fit+predict (s) |
+| --- | ---: | ---: | ---: |
+| Seasonal Naive | 0,997 | 1,157 | 0,0 |
+| Linear Regression | 0,776 | 0,980 | 25,2 |
+| ETS | 0,752 | 0,953 | 1026,2 |
+| Croston | 0,764 | 0,986 | 1,4 |
+| LightGBM | 0,768 | 0,984 | 9,7 |
+| XGBoost | 0,768 | 0,987 | 15,7 |
+| CatBoost | 0,768 | 0,984 | 2080,3 |
+
+Thời gian: mô hình cục bộ là tổng fit+predict từng chuỗi, mô hình global là fit toàn mẫu (Kaggle CPU 4 lõi),
+không so trực tiếp. Chênh lệch giữa nhóm đầu rất nhỏ và chỉ dựa trên một cửa sổ 28 ngày.
+
+- Báo cáo: [`report/draft_report.md`](report/draft_report.md); slide: `report/slides/m5_nhom6.pptx`; hỏi đáp: `report/qa.md`.
+- Dự báo và metrics theo `run_id`: `results/runs/`; bảng/hình: `results/tables/{validation,test}/`, `results/figures/`.
+- Smoke reproduction: `results/tables/f10_smoke_reproduction.md` (tập con, không phải tái lập toàn bộ).
+- Giới hạn: một cửa sổ Test, mẫu 1.200 chuỗi, giả định giá tương lai, khác biệt input giữa mô hình cục bộ và global,
+  chưa đo chi phí tồn kho. Bản thảo và slide do AI soạn từ kết quả thật; chưa có thành viên nào review.
 
 ## Cấu trúc thư mục
 

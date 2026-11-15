@@ -1,0 +1,9 @@
+# Frozen (config-freeze v1). Global CatBoost, library defaults of catboost 1.2.10 except seed/threads/cat_features.
+model: catboost
+strategy: global
+changed_from_default: {random_seed: 42, thread_count: 4, verbose: 0, allow_writing_files: false, cat_features: categorical columns}
+parameters_recorded_in: results/runs/val-20261115T073404Z-20b22f7/model_parameters.json
+iterations: 1000
+learning_rate: 0.13808800280094147   # chosen automatically by CatBoost from the dataset size
+depth: 6
+loss_function: RMSE

@@ -1,0 +1,6 @@
+# Frozen (config-freeze v1). Local, one series at a time. No learned parameters.
+model: seasonal_naive
+strategy: local
+season_length: 7
+horizon: 28
+input: sales history of the series only (d_1..origin)

@@ -1,5 +1,5 @@
-# C05 se chot sau khi co bang thoi gian C01-C04 va C06.
-status: provisional
+# C05 chot: giu 1.200 chuoi. Thuc te tren Validation: ETS 1.018 s (tong don luong), CatBoost 2.092 s, deu kha thi.
+status: frozen
 seed: 42
 n_series: 1200
 stratify_by: [store_id, cat_id]

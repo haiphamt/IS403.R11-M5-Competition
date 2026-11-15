@@ -282,6 +282,39 @@ Ghi lỗi đường dẫn, file thiếu hoặc sai cột tại đây hoặc tron
 để cả nhóm sửa chung. Việc chạy thành công các kiểm thử với CSV giả lập
 không thay thế bằng chứng chạy trên dữ liệu thật ở Colab/Kaggle.
 
+## 11. Pipeline thí nghiệm đầy đủ (7 mô hình lõi)
+
+Môi trường kiểm thử: Python 3.11, cài `pip install -r requirements.txt`
+(trên máy có proxy TLS dùng thêm `--use-feature=truststore`). Phiên bản thực dùng
+của mỗi run được ghi trong `environment.json`.
+
+```bash
+python scripts/prepare_sample_split.py                    # D02/D03/D07: mẫu 1.200 chuỗi, split parquet, báo cáo dữ liệu
+python scripts/run_experiment.py --split validation       # origin d_1885, 7 mô hình -> results/runs/<run_id>/
+python scripts/collect_runs.py --split validation --runs results/runs/<run_a> results/runs/<run_b> --out results/tables/validation
+python scripts/analyze_results.py --split validation --tables results/tables/validation --figures results/figures/validation
+# sau khi chốt cấu hình và tạo tag config-freeze:
+python scripts/run_experiment.py --split test             # origin d_1913, refit Train+Validation
+```
+
+- Mẫu và manifest: `data/sample_series_ids.csv` (seed 42, 40 chuỗi x 30 tầng, hash trong
+  `results/tables/d07_data_quality_report.json`).
+- Mô hình cục bộ theo chuỗi: Seasonal Naive, ETS (AutoETS, chu kỳ 7, AICc), Croston
+  (`src/m5/univariate.py`). Mô hình global trên toàn mẫu: Linear Regression, LightGBM, XGBoost,
+  CatBoost (`src/m5/global_models.py`) với lag 28/35/42, rolling mean/std 7/28 sau shift 28, lịch,
+  SNAP theo bang, giá tuần (giữ NaN + `price_missing`); `item_id` không dùng làm biến phân loại.
+- Tham số "Default" là mặc định thư viện; chỉ đặt seed, số luồng, `enable_categorical`
+  (XGBoost) và `cat_features` (CatBoost). Toàn bộ tham số thực dùng ở `model_parameters.json`.
+- Mọi dự báo bị cắt tại 0 đồng loạt (không làm tròn); số dự báo âm trước khi cắt ghi trong
+  `timings.json`. Chuỗi lỗi được fallback và ghi ở `diag_fallbacks.csv`, không đổi tên mô hình.
+- Split `test` bị chặn nếu chưa có tag `config-freeze`.
+- Resume: chạy lại cùng lệnh với `--run-id <id>`; ETS/Croston lưu checkpoint 50 chuỗi trong `ckpt/`
+  (Git bỏ qua `*.pkl`). Chạy trên Kaggle/Colab bằng
+  [`notebooks/02_m5_full_run.ipynb`](notebooks/02_m5_full_run.ipynb) (6 mô hình nhanh) và
+  [`notebooks/02b_m5_catboost_run.ipynb`](notebooks/02b_m5_catboost_run.ipynb) (CatBoost, chậm trên CPU).
+- Thời gian trong bảng: mô hình cục bộ = tổng fit+predict từng chuỗi (một luồng mỗi chuỗi);
+  mô hình global = fit+predict toàn mẫu nhiều luồng; không dùng để so trực tiếp nếu khác phần cứng.
+
 ## Tài nguyên gốc
 
 - [Cuộc thi M5 Forecasting – Accuracy](https://www.kaggle.com/competitions/m5-forecasting-accuracy)

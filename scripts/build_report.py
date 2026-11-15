@@ -52,6 +52,20 @@ def table(name):
     if base in ("demand_class_rmsse", "cat_rmsse", "state_rmsse", "demand_class_mae"):
         key = {"demand_class": "demand_class", "cat": "cat_id", "state": "state"}[base.rsplit("_", 1)[0]]
         return group(split, key, base.rsplit("_", 1)[1])
+    if base == "pooled":
+        d = pd.read_csv(T / split / f"{split}_overall.csv", index_col=0).loc[ORDER]
+        out = pd.DataFrame({"Mô hình": [L[m] for m in d.index], "RMSE macro": d["macro_rmse"].values, "RMSE gộp": d["pooled_rmse"].values,
+                            "MAE macro": d["macro_mae"].values, "R² không xác định (số chuỗi)": d["n_r2_undefined"].astype(int).values,
+                            "RMSSE không xác định (số chuỗi)": d["n_rmsse_undefined"].astype(int).values})
+        return md(out)
+    if base == "negraw":
+        rows = []
+        for p in sorted(RUNS.glob(f"{split[:3]}-*")):
+            t = json.loads((p / "timings.json").read_text())
+            for m, v in t.items():
+                if isinstance(v, dict) and "n_negative_raw_predictions" in v:
+                    rows.append({"Mô hình": L[m], "Số dự báo âm trước khi cắt về 0 (trên 33.600)": v["n_negative_raw_predictions"]})
+        return md(pd.DataFrame(rows))
     if base == "weekday":
         d = pd.read_csv(T / split / f"{split}_mae_by_weekday.csv").rename(columns=L)
         return md(d)

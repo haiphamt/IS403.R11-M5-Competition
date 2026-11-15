@@ -1,0 +1,50 @@
+{
+  "run_id": "tes-20261115T095405Z-4994dda",
+  "split": "test",
+  "origin_day": 1913,
+  "git_sha": "4994ddadbe5964a180b6cf4dac35c6fbd1fc4133",
+  "git_dirty": true,
+  "utc": "2026-11-15T10:29:02.290659+00:00",
+  "python": "3.13.18 (main, Oct 26 2026, 15:28:15) [GCC 13.3.0]",
+  "platform": "Linux-6.18.55+-x86_64-with-glibc2.39",
+  "machine": "x86_64",
+  "cpu_count": 4,
+  "packages": {
+    "numpy": "2.1.3",
+    "pandas": "2.3.3",
+    "pyarrow": "23.0.1",
+    "scikit-learn": "1.6.1",
+    "lightgbm": "4.6.0",
+    "xgboost": "3.4.1",
+    "catboost": "1.2.10",
+    "statsforecast": "2.1.1",
+    "numba": "0.61.2",
+    "optuna": "5.0.0",
+    "scipy": "1.16.3"
+  },
+  "sample": {
+    "n_series": 1200,
+    "manifest_sha256": "68d7acc8ef39f266d5b8274569fc25869c4187ba160a07686a2b292b0d5940f4",
+    "seed": 42,
+    "per_stratum": 40
+  },
+  "data_sha256": {},
+  "models": [
+    "catboost"
+  ],
+  "postprocessing": "clip y_pred at 0 for every model; no rounding",
+  "args": {
+    "split": "test",
+    "models": [
+      "catboost"
+    ],
+    "data_dir": null,
+    "manifest": "/kaggle/working/repo/data/sample_series_ids.csv",
+    "out": "/kaggle/working/repo/results/runs",
+    "run_id": null,
+    "workers": 3,
+    "n_jobs": 4,
+    "chunk": 50,
+    "max_series": null
+  }
+}

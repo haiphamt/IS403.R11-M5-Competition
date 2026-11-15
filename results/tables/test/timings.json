@@ -1,0 +1,68 @@
+{
+  "seasonal_naive": {
+    "fit_predict_sum_s": 0.0315274109980237,
+    "wall_s": 0.25277853199986566,
+    "workers": 3,
+    "n_series": 1200,
+    "n_fallback": 0,
+    "scope": "sum over series of per-series fit+predict, single thread each",
+    "n_negative_raw_predictions": 0,
+    "run_id": "tes-20261115T090359Z-4cc19f7"
+  },
+  "linear_regression": {
+    "fit_s": 25.05208097400009,
+    "predict_s": 0.13614136700016388,
+    "n_train_rows": 2229600,
+    "threads": 4,
+    "scope": "pooled model: fit + predict wall time (features timed separately)",
+    "n_negative_raw_predictions": 2032,
+    "run_id": "tes-20261115T090359Z-4cc19f7"
+  },
+  "ets": {
+    "fit_predict_sum_s": 1026.2187090130074,
+    "wall_s": 354.80389332899995,
+    "workers": 3,
+    "n_series": 1200,
+    "n_fallback": 0,
+    "scope": "sum over series of per-series fit+predict, single thread each",
+    "n_negative_raw_predictions": 474,
+    "run_id": "tes-20261115T090359Z-4cc19f7"
+  },
+  "croston": {
+    "fit_predict_sum_s": 1.370780769009798,
+    "wall_s": 0.6902304650002407,
+    "workers": 3,
+    "n_series": 1200,
+    "n_fallback": 0,
+    "scope": "sum over series of per-series fit+predict, single thread each",
+    "n_negative_raw_predictions": 0,
+    "run_id": "tes-20261115T090359Z-4cc19f7"
+  },
+  "lightgbm": {
+    "fit_s": 9.654414149000331,
+    "predict_s": 0.05425120899963076,
+    "n_train_rows": 2229600,
+    "threads": 4,
+    "scope": "pooled model: fit + predict wall time (features timed separately)",
+    "n_negative_raw_predictions": 0,
+    "run_id": "tes-20261115T090359Z-4cc19f7"
+  },
+  "xgboost": {
+    "fit_s": 15.615733696999996,
+    "predict_s": 0.0663609319999523,
+    "n_train_rows": 2229600,
+    "threads": 4,
+    "scope": "pooled model: fit + predict wall time (features timed separately)",
+    "n_negative_raw_predictions": 22,
+    "run_id": "tes-20261115T090359Z-4cc19f7"
+  },
+  "catboost": {
+    "fit_s": 2080.035638694,
+    "predict_s": 0.24125983600060863,
+    "n_train_rows": 2229600,
+    "threads": 4,
+    "scope": "pooled model: fit + predict wall time (features timed separately)",
+    "n_negative_raw_predictions": 6,
+    "run_id": "tes-20261115T095405Z-4994dda"
+  }
+}

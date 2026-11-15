@@ -1,0 +1,8 @@
+# Frozen (config-freeze v1). Local, one AutoETS per series.
+model: ets
+strategy: local
+estimator: statsforecast.models.AutoETS
+season_length: 7
+selection_criterion: AICc          # statsforecast default
+horizon: 28
+fallback: seasonal_naive, recorded per series in diag_fallbacks.csv (0 used in Validation)

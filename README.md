@@ -7,13 +7,34 @@ theo ngày cho từng sản phẩm tại từng cửa hàng trong **28 ngày ti�
 ## Phạm vi thực nghiệm
 
 - Dữ liệu: M5 Forecasting – Accuracy của Walmart.
-- Mẫu mặc định: **1.200 chuỗi**, chọn theo cửa hàng và ngành hàng, seed **42**.
-  Cỡ mẫu được chốt sau khi nhóm đo thời gian chạy thực tế.
+- Mẫu chính thức: **1.200 chuỗi**, chọn theo cửa hàng và ngành hàng, seed **42**
+  (cấu hình đã khóa tại tag `config-freeze`, xem `configs/freeze.yaml`).
 - Mô hình lõi: Seasonal Naive, Linear Regression, ETS, Croston,
   LightGBM Default, XGBoost và CatBoost.
-- Phần có thể cắt khi thiếu thời gian: LightGBM Tuned bằng Optuna và Stacking.
+- Phần tùy chọn (Optuna, Stacking, Croston SBA, ablation LightGBM) **đã bị cắt, không chạy**.
 - Độ đo theo checklist: **MAE, RMSE, RMSSE, R²**, kèm thời gian chạy.
   Phạm vi này được phân biệt với WRMSSE của cuộc thi M5 gốc.
+
+## Kết quả chính (Test d_1914–d_1941, 1.200 chuỗi, chạy một lần sau `config-freeze`)
+
+| Mô hình | RMSSE (macro) | MAE (macro) | fit+predict (s) |
+| --- | ---: | ---: | ---: |
+| Seasonal Naive | 0,997 | 1,157 | 0,0 |
+| Linear Regression | 0,776 | 0,980 | 25,2 |
+| ETS | 0,752 | 0,953 | 1026,2 |
+| Croston | 0,764 | 0,986 | 1,4 |
+| LightGBM | 0,768 | 0,984 | 9,7 |
+| XGBoost | 0,768 | 0,987 | 15,7 |
+| CatBoost | 0,768 | 0,984 | 2080,3 |
+
+Thời gian: mô hình cục bộ là tổng fit+predict từng chuỗi, mô hình global là fit toàn mẫu (Kaggle CPU 4 lõi),
+không so trực tiếp. Chênh lệch giữa nhóm đầu rất nhỏ và chỉ dựa trên một cửa sổ 28 ngày.
+
+- Báo cáo: [`report/draft_report.md`](report/draft_report.md); slide: `report/slides/m5_nhom6.pptx`; hỏi đáp: `report/qa.md`.
+- Dự báo và metrics theo `run_id`: `results/runs/`; bảng/hình: `results/tables/{validation,test}/`, `results/figures/`.
+- Smoke reproduction: `results/tables/f10_smoke_reproduction.md` (tập con, không phải tái lập toàn bộ).
+- Giới hạn: một cửa sổ Test, mẫu 1.200 chuỗi, giả định giá tương lai, khác biệt input giữa mô hình cục bộ và global,
+  chưa đo chi phí tồn kho. Bản thảo và slide do AI soạn từ kết quả thật; chưa có thành viên nào review.
 
 ## Cấu trúc thư mục
 
@@ -216,6 +237,54 @@ từng chuỗi; file JSON cùng tên `summary` ghi môi trường và ước lư
 Giữ nguyên mẫu tạm 1.200 chuỗi cho đến khi C05 có số đo của ETS/Croston,
 XGBoost/CatBoost, LightGBM và Linear Regression.
 
+## 9. Pilot thời gian LightGBM (C03)
+
+Chạy tuần tự [`01_lightgbm_c03.ipynb`](notebooks/01_lightgbm_c03.ipynb)
+trên Colab CPU. Notebook lấy mã từ nhánh `thuytien`, tải ba CSV nguồn đã chỉ
+rõ và giữ nguyên file gốc. Với bản Drive thiếu khóa `d`/`id`, notebook kiểm tra
+chuỗi ngày liên tục và ID item/store rồi tạo bản đầu vào riêng; phép chuyển đổi
+và hash được ghi trong metadata. Không đưa các CSV lớn vào Git.
+
+```bash
+python scripts/benchmark_lightgbm.py --data-dir /duong/dan/M5 --repeats 3
+```
+
+Pilot fit riêng 10 chuỗi đầu, chỉ dùng doanh số `d_1`–`d_1885` để dự báo 28 ngày.
+`src/m5/lightgbm_pilot.py` tạo lag 28/35/42, rolling 7/28 đã shift 28,
+lịch/sự kiện/SNAP/giá; giữ giá thiếu NaN kèm cờ. Dùng thông tin lịch/giá đã biết
+theo protocol. Tham số học mặc định và điều khiển CPU/seed nằm trong
+`configs/models/lightgbm_c03.yaml`. Không tuning, không dùng nhãn Validation/Test.
+
+Run Colab ngày 12/11/2026 tại
+[`results/tables/c03_lightgbm_colab_20261112T164342Z_82d16d27/`](results/tables/c03_lightgbm_colab_20261112T164342Z_82d16d27):
+30 dòng đo, bảng trung bình 10 chuỗi, summary và metadata nguồn/môi trường.
+Hình ở [`results/figures/`](results/figures/c03_lightgbm_colab_20261112T164342Z_82d16d27/runtime_by_series.png).
+Thời gian fit + predict trung bình **0,1885 giây/chuỗi**; ngoại suy 1.200 chuỗi
+**226,20 giây**, không gồm I/O, tạo feature, warm-up và ghi file.
+Đây là pilot thời gian, không phải lần chạy Validation M04 hay thời gian đo
+toàn mẫu. Mẫu 1.200 chuỗi vẫn tạm thời; quyết định C05 cần số đo của mọi mô hình.
+
+Kiểm thử: `python -m unittest discover -s tests -v`.
+Các kiểm thử dùng CSV giả chỉ kiểm tra mã, không thay kết quả M5 thật.
+
+## 9a. Chạy thử ETS và Croston (C01)
+
+```bash
+python scripts/benchmark_ets_croston.py
+```
+
+Mã mô hình ở `src/m5/ets_croston.py`, dùng `statsforecast`: `AutoETS` chọn
+cấu hình ETS theo AICc, `CrostonClassic` cho nhu cầu gián đoạn; cả hai chu kỳ
+7 ngày, dự báo 28 ngày, không cắt giá trị âm về 0.
+
+Cách chọn chuỗi và phạm vi dữ liệu giống mục 8. Mỗi chuỗi được làm nóng một
+lần rồi đo trung bình `--repeats` lần (mặc định 3) gồm huấn luyện và dự báo.
+File `results/tables/c01_ets_croston_runtime_<môi trường>.csv` ghi thời gian
+từng chuỗi và mô hình; file JSON `summary` ghi môi trường, phiên bản
+`statsforecast` và ước lượng cho 1.200 chuỗi, một lượt và Validation + Test.
+Notebook chạy trên Colab/Kaggle:
+[`01_ets_croston_pilot.ipynb`](notebooks/01_ets_croston_pilot.ipynb).
+
 ## 10. Ghi nhận kết quả kiểm tra (S06)
 
 Mỗi người lưu liên kết notebook, ngày chạy, nền tảng, phiên bản Python/pandas,
@@ -233,6 +302,39 @@ Khi dùng bộ Kaggle đầy đủ, đối chiếu:
 Ghi lỗi đường dẫn, file thiếu hoặc sai cột tại đây hoặc trong ghi chú task
 để cả nhóm sửa chung. Việc chạy thành công các kiểm thử với CSV giả lập
 không thay thế bằng chứng chạy trên dữ liệu thật ở Colab/Kaggle.
+
+## 11. Pipeline thí nghiệm đầy đủ (7 mô hình lõi)
+
+Môi trường kiểm thử: Python 3.11, cài `pip install -r requirements.txt`
+(trên máy có proxy TLS dùng thêm `--use-feature=truststore`). Phiên bản thực dùng
+của mỗi run được ghi trong `environment.json`.
+
+```bash
+python scripts/prepare_sample_split.py                    # D02/D03/D07: mẫu 1.200 chuỗi, split parquet, báo cáo dữ liệu
+python scripts/run_experiment.py --split validation       # origin d_1885, 7 mô hình -> results/runs/<run_id>/
+python scripts/collect_runs.py --split validation --runs results/runs/<run_a> results/runs/<run_b> --out results/tables/validation
+python scripts/analyze_results.py --split validation --tables results/tables/validation --figures results/figures/validation
+# sau khi chốt cấu hình và tạo tag config-freeze:
+python scripts/run_experiment.py --split test             # origin d_1913, refit Train+Validation
+```
+
+- Mẫu và manifest: `data/sample_series_ids.csv` (seed 42, 40 chuỗi x 30 tầng, hash trong
+  `results/tables/d07_data_quality_report.json`).
+- Mô hình cục bộ theo chuỗi: Seasonal Naive, ETS (AutoETS, chu kỳ 7, AICc), Croston
+  (`src/m5/univariate.py`). Mô hình global trên toàn mẫu: Linear Regression, LightGBM, XGBoost,
+  CatBoost (`src/m5/global_models.py`) với lag 28/35/42, rolling mean/std 7/28 sau shift 28, lịch,
+  SNAP theo bang, giá tuần (giữ NaN + `price_missing`); `item_id` không dùng làm biến phân loại.
+- Tham số "Default" là mặc định thư viện; chỉ đặt seed, số luồng, `enable_categorical`
+  (XGBoost) và `cat_features` (CatBoost). Toàn bộ tham số thực dùng ở `model_parameters.json`.
+- Mọi dự báo bị cắt tại 0 đồng loạt (không làm tròn); số dự báo âm trước khi cắt ghi trong
+  `timings.json`. Chuỗi lỗi được fallback và ghi ở `diag_fallbacks.csv`, không đổi tên mô hình.
+- Split `test` bị chặn nếu chưa có tag `config-freeze`.
+- Resume: chạy lại cùng lệnh với `--run-id <id>`; ETS/Croston lưu checkpoint 50 chuỗi trong `ckpt/`
+  (Git bỏ qua `*.pkl`). Chạy trên Kaggle/Colab bằng
+  [`notebooks/02_m5_full_run.ipynb`](notebooks/02_m5_full_run.ipynb) (6 mô hình nhanh) và
+  [`notebooks/02b_m5_catboost_run.ipynb`](notebooks/02b_m5_catboost_run.ipynb) (CatBoost, chậm trên CPU).
+- Thời gian trong bảng: mô hình cục bộ = tổng fit+predict từng chuỗi (một luồng mỗi chuỗi);
+  mô hình global = fit+predict toàn mẫu nhiều luồng; không dùng để so trực tiếp nếu khác phần cứng.
 
 ## Tài nguyên gốc
 

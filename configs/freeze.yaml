@@ -1,0 +1,35 @@
+# config-freeze v1: everything that must not change after the Test labels are opened.
+version: 1
+code_sha_validation_runs: 20b22f724337698512504b827c2ebeba544da1c0
+validation_runs:
+  - val-20261115T072831Z-20b22f7   # seasonal_naive, linear_regression, ets, croston, lightgbm, xgboost
+  - val-20261115T073404Z-20b22f7   # catboost
+sample:
+  n_series: 1200
+  seed: 42
+  stratify_by: [store_id, cat_id]
+  per_stratum: 40
+  manifest: data/sample_series_ids.csv
+  manifest_sha256: 68d7acc8ef39f266d5b8274569fc25869c4187ba160a07686a2b292b0d5940f4
+splits: {train: [1, 1885], validation: [1886, 1913], test: [1914, 1941]}
+test_recipe: refit every model on d_1..d_1913 with the same configuration, forecast d_1914..d_1941 once
+models_evaluated: [seasonal_naive, linear_regression, ets, croston, lightgbm, xgboost, catboost]
+features:
+  numeric: [lag_28, lag_35, lag_42, rolling_mean_7, rolling_std_7, rolling_mean_28, rolling_std_28, year, snap, sell_price, price_missing]
+  categorical: [dept_id, cat_id, store_id, state_id, wday, month, event_name_1, event_type_1, event_name_2, event_type_2]
+  excluded: [item_id]      # high cardinality; deviation from configs/features.yaml, documented in the report
+future_exogenous_assumption: "calendar, SNAP and weekly prices of the forecast days are treated as known at the origin (M5 publishes prices to d_1969); not a statement about real-world price planning"
+metric_policy:
+  per_series: [mae, rmse, rmsse, r2]
+  rmsse_scale: "one-step naive MSE on d_1..origin after the first non-zero sale"
+  undefined_handling: "NaN with reason, excluded from macro mean, counted; no epsilon"
+  aggregation: "macro mean over series where defined (ranking: macro_rmsse); pooled MAE/RMSE reported separately"
+postprocessing: "clip y_pred at 0 for every model; no rounding"
+seeds: {global_models: 42}
+runtime_reporting: "local models: sum of per-series fit+predict; global models: pooled fit+predict; features/IO/warm-up separate; Kaggle CPU, 4 vCPU"
+optional_decisions:
+  T01_optuna_tuned_lightgbm: cut     # not run; default LightGBM is the evaluated configuration
+  T02_stacking_ridge: cut            # not run; no meta-model or out-of-fold forecasts were produced
+  X01_croston_sba: cut
+  X02_lightgbm_without_price_event: cut
+  reason: "Core Validation and Test have priority; optional items were not run within the available time and are reported as not done."

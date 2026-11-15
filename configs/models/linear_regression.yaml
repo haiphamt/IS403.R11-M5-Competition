@@ -1,0 +1,8 @@
+# Frozen (config-freeze v1). Global OLS on the shared feature table.
+model: linear_regression
+strategy: global
+estimator: sklearn.linear_model.LinearRegression   # library defaults (fit_intercept=True)
+preprocessing:
+  numeric: [median imputer, StandardScaler]        # fit on fold training rows only
+  categorical: OneHotEncoder(drop=first, handle_unknown=ignore)
+features_file: configs/freeze.yaml

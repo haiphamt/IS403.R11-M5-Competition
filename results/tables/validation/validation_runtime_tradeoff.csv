@@ -1,0 +1,8 @@
+model,fit_predict_s,wall_s,scope,run_id,macro_rmsse,macro_mae
+seasonal_naive,0.04,0.248,"sum over series of per-series fit+predict, single thread each",val-20261115T072831Z-20b22f7,0.978,1.162
+linear_regression,24.4,24.4,pooled model: fit + predict wall time (features timed separately),val-20261115T072831Z-20b22f7,0.759,0.979
+ets,1018.304,349.701,"sum over series of per-series fit+predict, single thread each",val-20261115T072831Z-20b22f7,0.729,0.966
+croston,1.356,0.689,"sum over series of per-series fit+predict, single thread each",val-20261115T072831Z-20b22f7,0.745,0.995
+lightgbm,10.362,10.362,pooled model: fit + predict wall time (features timed separately),val-20261115T072831Z-20b22f7,0.75,0.988
+xgboost,15.596,15.596,pooled model: fit + predict wall time (features timed separately),val-20261115T072831Z-20b22f7,0.75,0.99
+catboost,2092.072,2092.072,pooled model: fit + predict wall time (features timed separately),val-20261115T073404Z-20b22f7,0.763,1.005

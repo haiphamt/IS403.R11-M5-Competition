@@ -1,0 +1,6 @@
+# Frozen (config-freeze v1). Local classic Croston (no SBA).
+model: croston
+strategy: local
+estimator: statsforecast.models.CrostonClassic
+alpha: 0.1                         # statsforecast default smoothing
+horizon: 28

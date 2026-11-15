@@ -35,7 +35,7 @@ def slide(title, notes, bullets=None, image=None, table=None, caption=None):
     p.text, p.font.size, p.font.bold = title, Pt(30), True
     top = Inches(1.3)
     if bullets:
-        box = s.shapes.add_textbox(Inches(0.6), top, Inches(6.0 if (image or table) else 12.0), Inches(5.5))
+        box = s.shapes.add_textbox(Inches(0.6), top, Inches(6.0 if (image is not None or table is not None) else 12.0), Inches(5.5))
         tf = box.text_frame
         tf.word_wrap = True
         for i, b in enumerate(bullets):
@@ -53,7 +53,7 @@ def slide(title, notes, bullets=None, image=None, table=None, caption=None):
             gt.cell(0, j).text = str(c)
         for i, row in enumerate(table.itertuples(index=False), start=1):
             for j, v in enumerate(row):
-                gt.cell(i, j).text = f"{v:.3f}" if isinstance(v, float) else str(v)
+                gt.cell(i, j).text = f"{v:.3f}".replace(".", ",") if isinstance(v, float) else str(v)
         for r in gt.rows:
             for c in r.cells:
                 for para in c.text_frame.paragraphs:
@@ -96,7 +96,7 @@ def main():
     slide("Độ đo", "Tuấn Vũ (W03/P03): công thức, edge cases.",
           ["MAE, RMSE theo chuỗi; RMSSE chuẩn hóa bằng sai số naïve một bước", "R² có thể âm; hằng → không xác định",
            "Không epsilon: NaN + lý do, loại khỏi macro, đếm riêng", "Xếp hạng: macro-RMSSE; pooled MAE/RMSE báo cáo riêng", "WRMSSE của M5 ≠ trung bình RMSSE"])
-    d = val.reset_index().rename(columns={"model": "Mô hình"})[["model", "macro_mae", "macro_rmse", "macro_rmsse", "macro_r2", "fit_predict_s"]]
+    d = val.reset_index()[["model", "macro_mae", "macro_rmse", "macro_rmsse", "macro_r2", "fit_predict_s"]]
     d["model"] = d["model"].map(LABEL)
     d.columns = ["Mô hình", "MAE", "RMSE", "RMSSE", "R²", "fit+predict (s)"]
     slide("Kết quả Validation (d_1886–1913)", "Thủy Tiên (W07/P04). Dùng để chọn cấu hình; không có tuning.", table=d,

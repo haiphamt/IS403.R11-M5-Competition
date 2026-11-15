@@ -1,0 +1,88 @@
+feature,coefficient
+num__lag_28,0.2765033586034339
+num__lag_35,0.18925842734094894
+num__lag_42,0.13089457206978883
+num__rolling_mean_7,0.67897683327275
+num__rolling_std_7,-0.0205418764894566
+num__rolling_mean_28,1.1751037009956409
+num__rolling_std_28,0.030235568382177388
+num__year,-0.019907283266451255
+num__snap,0.03977593767094547
+num__sell_price,-0.056628024944727594
+num__price_missing,-0.08553340088401183
+cat__dept_id_FOODS_2,0.06293113259213827
+cat__dept_id_FOODS_3,0.135312839310145
+cat__dept_id_HOBBIES_1,0.036609932017211744
+cat__dept_id_HOBBIES_2,-0.0746336048773403
+cat__dept_id_HOUSEHOLD_1,0.05307647194533242
+cat__dept_id_HOUSEHOLD_2,-0.06712064337342956
+cat__cat_id_HOBBIES,-0.03802367060268469
+cat__cat_id_HOUSEHOLD,-0.014044171353629765
+cat__store_id_CA_2,-0.0016172518048404602
+cat__store_id_CA_3,0.10778836818974241
+cat__store_id_CA_4,-0.05651270511631448
+cat__store_id_TX_1,-0.02978545273998982
+cat__store_id_TX_2,0.03219925176615927
+cat__store_id_TX_3,-0.0024704571124824735
+cat__store_id_WI_1,0.0005341123269203419
+cat__store_id_WI_2,-0.00686843325633135
+cat__store_id_WI_3,-0.01748647408792069
+cat__state_id_TX,-5.665891415651763e-05
+cat__state_id_WI,-0.023820795960686668
+cat__wday_2,-0.00643683450685997
+cat__wday_3,-0.2236860050758558
+cat__wday_4,-0.27473853432071077
+cat__wday_5,-0.28325353642139006
+cat__wday_6,-0.27181928165803904
+cat__wday_7,-0.1754694907607507
+cat__month_10,-0.047867695359931815
+cat__month_11,-0.0979623069434619
+cat__month_12,-0.048394595303583025
+cat__month_2,0.060789921267505216
+cat__month_3,-0.01140258902453168
+cat__month_4,-0.02540992390195916
+cat__month_5,-0.023820835629836334
+cat__month_6,0.05397914923033081
+cat__month_7,0.0005516739024819075
+cat__month_8,-0.0051766074708943935
+cat__month_9,-0.04348578141953416
+cat__event_name_1_Christmas,-0.8194535246511276
+cat__event_name_1_Cinco De Mayo,0.03331054279342877
+cat__event_name_1_ColumbusDay,0.11325158922894958
+cat__event_name_1_Easter,-0.09206342845557162
+cat__event_name_1_Eid al-Fitr,-0.08992831486460748
+cat__event_name_1_EidAlAdha,-0.05533652286191308
+cat__event_name_1_Father's day,0.008534830382870517
+cat__event_name_1_Halloween,-0.0488970103827695
+cat__event_name_1_IndependenceDay,0.05727905517025098
+cat__event_name_1_LaborDay,0.34834533139794277
+cat__event_name_1_LentStart,-0.01770422483974916
+cat__event_name_1_LentWeek2,-0.04890762949161769
+cat__event_name_1_MartinLutherKingDay,0.1553516586842037
+cat__event_name_1_MemorialDay,0.1719191898190884
+cat__event_name_1_Mother's day,-0.12321523304347999
+cat__event_name_1_NBAFinalsEnd,-0.022868803460860083
+cat__event_name_1_NBAFinalsStart,0.04803913138352767
+cat__event_name_1_NewYear,-0.14844964908552724
+cat__event_name_1_OrthodoxChristmas,-0.08982951297551256
+cat__event_name_1_OrthodoxEaster,-0.06515373287156556
+cat__event_name_1_Pesach End,-0.04974581739564327
+cat__event_name_1_PresidentsDay,0.15182409586791148
+cat__event_name_1_Purim End,-0.05872283307981173
+cat__event_name_1_Ramadan starts,-0.02982690944108494
+cat__event_name_1_StPatricksDay,0.07963944829773992
+cat__event_name_1_SuperBowl,-0.010724548350542413
+cat__event_name_1_Thanksgiving,-0.1178678285899348
+cat__event_name_1_ValentinesDay,-0.00013457142935685595
+cat__event_name_1_VeteransDay,0.07721351341217118
+cat__event_name_1___NONE__,0.03563185437422392
+cat__event_type_1_National,-0.010586568746963924
+cat__event_type_1_Religious,0.1033343771478245
+cat__event_type_1_Sporting,0.014445779573669906
+cat__event_type_1___NONE__,0.03563185437422392
+cat__event_name_2_Easter,-0.05442042083094753
+cat__event_name_2_Father's day,0.004067716515345475
+cat__event_name_2_OrthodoxEaster,0.017089076029898894
+cat__event_name_2___NONE__,0.03762089414853353
+cat__event_type_2_Religious,0.017089076029898894
+cat__event_type_2___NONE__,0.03762089414853353

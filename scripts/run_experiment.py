@@ -124,9 +124,9 @@ def main():
     ap.add_argument("--max-series", type=int, default=None, help="smoke run on the first N sample series")
     args = ap.parse_args()
 
-    if args.split == "test" and args.max_series is None and not git("rev-parse", "-q", "--verify", f"refs/tags/{FREEZE_TAG}"):
+    if args.split == "test" and not git("rev-parse", "-q", "--verify", f"refs/tags/{FREEZE_TAG}"):  # also locks --max-series: no peeking at Test labels
         raise SystemExit(f"Test is locked: tag {FREEZE_TAG} not found (freeze configs first).")
-    if args.split == "test" and args.max_series is None and set(args.models) & set(OPTIONAL_MODELS)             and not git("rev-parse", "-q", "--verify", f"refs/tags/{FREEZE_TAG_V2}"):
+    if args.split == "test" and set(args.models) & set(OPTIONAL_MODELS) and not git("rev-parse", "-q", "--verify", f"refs/tags/{FREEZE_TAG_V2}"):
         raise SystemExit(f"Test of optional models is locked: tag {FREEZE_TAG_V2} not found.")
     lgbm_params = json.loads(Path(args.lgbm_params).read_text()) if args.lgbm_params else None
     split = args.split

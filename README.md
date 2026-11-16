@@ -349,7 +349,7 @@ python scripts/run_experiment.py --split test             # origin d_1913, refit
 - Resume: chạy lại cùng lệnh với `--run-id <id>`; ETS/Croston lưu checkpoint 50 chuỗi trong `ckpt/`
   (Git bỏ qua `*.pkl`). Chạy trên Kaggle/Colab bằng
   [`notebooks/02_m5_full_run.ipynb`](notebooks/02_m5_full_run.ipynb) (6 mô hình nhanh) và
-  [`notebooks/02b_m5_catboost_run.ipynb`](notebooks/02b_m5_catboost_run.ipynb) (CatBoost, chậm trên CPU).
+  [`notebooks/02b_m5_catboost_run.ipynb`](notebooks/02b_m5_catboost_run.ipynb) (CatBoost, chậm trên CPU). Test dùng `03_m5_test_run.ipynb` và `03b_m5_catboost_test_run.ipynb`; hai notebook này clone đúng tag `config-freeze` (mã đã khóa) chứ không phải đầu nhánh. Cả bốn notebook in cảnh báo nếu phiên bản thư viện khác `requirements.txt`, và ô cuối chỉ lấy run vừa tạo của split đang chạy.
 - Thời gian trong bảng: mô hình cục bộ = tổng fit+predict từng chuỗi (một luồng mỗi chuỗi);
   mô hình global = fit+predict toàn mẫu nhiều luồng; không dùng để so trực tiếp nếu khác phần cứng.
 

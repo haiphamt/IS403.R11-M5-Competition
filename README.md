@@ -333,6 +333,8 @@ python scripts/run_experiment.py --split test             # origin d_1913, refit
   (kiểm: `git rev-parse <commit>^{tree}` bằng cột `tree_hash_of_old_sha`). Chỉ `4994dda` còn thẻ `archive/pre-rewrite-4994dda` (kiểm tra: `git diff --stat archive/pre-rewrite-4994dda config-freeze -- src scripts/run_experiment.py`,
   không có dòng nào = giống hệt). Thẻ của `20b22f7` và `4cc19f7` đã gỡ vì lịch sử cũ có dòng đồng tác giả AI; mã của hai SHA này
   đã kiểm giống bản khóa trước khi gỡ (ghi trong bảng map).
+- Trường `git_dirty: true` trong `environment.json` của 4 run lõi chỉ do thư mục `results/<run_id>` được tạo trước khi kiểm tra
+  (không phải mã bị sửa dở); từ run `val-20261116T015146Z-2ee03bd` trường này bỏ qua `results/`.
 - Mô hình cục bộ theo chuỗi: Seasonal Naive, ETS (AutoETS, chu kỳ 7, AICc), Croston
   (`src/m5/univariate.py`). Mô hình global trên toàn mẫu: Linear Regression, LightGBM, XGBoost,
   CatBoost (`src/m5/global_models.py`) với lag 28/35/42, rolling mean/std 7/28 sau shift 28, lịch,
@@ -352,7 +354,8 @@ python scripts/run_experiment.py --split test             # origin d_1913, refit
 
 ### Phần tùy chọn (T01, T02, X01, X02)
 
-Thứ tự chạy (Validation trước, Test sau và chỉ sau khi có tag `config-freeze-v2`):
+Thứ tự chạy (Validation trước, Test sau và chỉ sau khi có tag `config-freeze-v2`). Các notebook clone nhánh `m5-end-to-end`, nên
+PR chứa `configs/models/lightgbm_tuned.json` (PR #25) phải được merge vào nhánh này trước khi chạy `05_m5_optional_test.ipynb`.
 
 1. `notebooks/04_m5_optional_validation.ipynb` (Kaggle): Optuna, Croston SBA, ablation, dự báo ngoài mẫu (OOF) của LR/LightGBM/XGBoost;
    `04b_m5_optional_catboost_oof.ipynb`: OOF của CatBoost.

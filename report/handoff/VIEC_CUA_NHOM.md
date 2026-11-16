@@ -74,9 +74,9 @@ AI không đụng vào Jira hoặc Sheet. Mỗi người tự cập nhật task 
 | Người | Task riêng cần cập nhật (theo bảng phân công) | Ghi chú trạng thái |
 |---|---|---|
 | Tuấn Hải | S01, S03, S05, C04, C05, D01, D03, D06, T03, F01, F10, W04, W08, P01, P05 | F10 là smoke, không phải tái lập đầy đủ; W08 (Tóm tắt/Kết luận) đã soạn |
-| Tuấn Vũ | C01, D05, M01, M02, M07, M08, F03, F07, W03, P03, X01 | X01 (Croston SBA) bị cắt, không chạy |
+| Tuấn Vũ | C01, D05, M01, M02, M07, M08, F03, F07, W03, P03, X01 | X01 (Croston SBA): *measured on M5* ở Validation (RMSSE 0,7425), Test chưa chạy |
 | Thanh Tiền | S04, C02, D02, D07, M05, M06, M10, F04, F08 | |
-| Thủy Tiên | C03, M04, T01, F05, W07, P04, X02 | T01 và X02 bị cắt; F05 chỉ có LightGBM Default |
-| Thùy Trang | C06, D04, M03, T02, F02, F06, W02, W09, W11 | T02 và F06 (stacking) bị cắt; W11 chưa làm |
+| Thủy Tiên | C03, M04, T01, F05, W07, P04, X02 | T01 (Optuna) và X02 (bỏ giá/sự kiện): *measured on M5* ở Validation (Tuned 0,7447; bỏ giá/sự kiện 0,7479), Test chưa chạy; F05 trên Test chỉ có LightGBM Default |
+| Thùy Trang | C06, D04, M03, T02, F02, F06, W02, W09, W11 | T02 và F06 (stacking): *implemented* và *tested on fixtures*, chưa có kết quả trên M5 (chờ OOF CatBoost); W11 chưa làm |
 
 Task chung (S02, S06, M09, W01, W05, W10, P06, P07, P08, F09): mỗi người cập nhật phần của mình. Trạng thái cần ghi rõ: *implemented* (mã đã có), *tested on fixtures*, *measured on M5* (có run_id), *AI reviewed*, hoặc *human approved* (chỉ khi người thật đã duyệt).

@@ -11,3 +11,6 @@ lightgbm==4.6.0
 xgboost==3.4.1
 catboost==1.2.10
 matplotlib
+# Phan tuy chon va cong cu bao cao (khong dung cho 7 mo hinh loi)
+optuna==5.0.0
+python-pptx==1.0.2

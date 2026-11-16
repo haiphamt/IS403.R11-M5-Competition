@@ -125,9 +125,10 @@ Với $e_{i,h}=y_{i,T+h}-\hat y_{i,T+h}$ và $H=28$:
 | tes-20261115T095405Z-4994dda | test | d_1913 | CatBoost | 4994dda | 4 | 3.13.18 |
 | val-20261115T072831Z-20b22f7 | validation | d_1885 | Seasonal Naive, Linear Regression, ETS, Croston, LightGBM, XGBoost | 20b22f7 | 4 | 3.13.18 |
 | val-20261115T073404Z-20b22f7 | validation | d_1885 | CatBoost | 20b22f7 | 4 | 3.13.18 |
+| val-20261116T015146Z-2ee03bd | validation | d_1885 | croston_sba, lightgbm_noprice, lightgbm_tuned | 2ee03bd | 4 | 3.13.18 |
 <!-- /TABLE -->
 
-Seed 42, hash manifest mẫu `68d7acc8…`, không có chuỗi nào phải fallback sang Seasonal Naive ở cả Validation và Test (`diag_fallbacks.csv` không được tạo). Các phần tùy chọn (Optuna, stacking, SBA, ablation) được mô tả ở mục 3.10; cấu hình lõi ở `configs/freeze.yaml` không đổi.
+Seed 42, hash manifest mẫu `68d7acc8…` (SHA-256 của danh sách `series_id` đã sắp xếp), trường `git_dirty` của các run lõi bằng `true` chỉ vì thư mục kết quả được tạo trước khi kiểm tra git (không phải mã bị sửa dở), không có chuỗi nào phải fallback sang Seasonal Naive ở cả Validation và Test (`diag_fallbacks.csv` không được tạo). Các phần tùy chọn (Optuna, stacking, SBA, ablation) được mô tả ở mục 3.10; cấu hình lõi ở `configs/freeze.yaml` không đổi.
 
 **Kết quả Validation (d_1886–d_1913, 28 ngày; chọn cấu hình, không tuning).**
 

@@ -35,9 +35,11 @@ from m5.panel import build_panel  # noqa: E402
 from m5.sample import manifest_hash  # noqa: E402
 from m5.schema import HORIZON, SPLITS, forecast_days, validate_predictions  # noqa: E402
 
-LOCAL_MODELS = ["seasonal_naive", "ets", "croston"]
+LOCAL_MODELS = ["seasonal_naive", "ets", "croston", "croston_sba"]
 ALL_MODELS = ["seasonal_naive", "linear_regression", "ets", "croston", "lightgbm", "xgboost", "catboost"]
+OPTIONAL_MODELS = ["croston_sba", "lightgbm_noprice", "lightgbm_tuned"]  # X01, X02, T01 (frozen in config-freeze-v2)
 FREEZE_TAG = "config-freeze"
+FREEZE_TAG_V2 = "config-freeze-v2"
 
 
 def git(*args):
@@ -110,7 +112,8 @@ def to_schema(run_id, model, split, series_ids, matrix):
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--split", choices=["validation", "test"], required=True)
-    ap.add_argument("--models", nargs="+", default=ALL_MODELS, choices=ALL_MODELS)
+    ap.add_argument("--models", nargs="+", default=ALL_MODELS, choices=ALL_MODELS + OPTIONAL_MODELS)
+    ap.add_argument("--lgbm-params", default=None, help="JSON with the Optuna best parameters (for lightgbm_tuned)")
     ap.add_argument("--data-dir", default=None)
     ap.add_argument("--manifest", default=str(ROOT / "data" / "sample_series_ids.csv"))
     ap.add_argument("--out", default=str(ROOT / "results" / "runs"))
@@ -123,6 +126,9 @@ def main():
 
     if args.split == "test" and args.max_series is None and not git("rev-parse", "-q", "--verify", f"refs/tags/{FREEZE_TAG}"):
         raise SystemExit(f"Test is locked: tag {FREEZE_TAG} not found (freeze configs first).")
+    if args.split == "test" and args.max_series is None and set(args.models) & set(OPTIONAL_MODELS)             and not git("rev-parse", "-q", "--verify", f"refs/tags/{FREEZE_TAG_V2}"):
+        raise SystemExit(f"Test of optional models is locked: tag {FREEZE_TAG_V2} not found.")
+    lgbm_params = json.loads(Path(args.lgbm_params).read_text()) if args.lgbm_params else None
     split = args.split
     origin = SPLITS[split][0] - 1
     sha = git("rev-parse", "HEAD")
@@ -171,7 +177,7 @@ def main():
                     diag[model].append({"series_id": r["series_id"], **r["info"]})
         else:
             X, y, Xf, keys = table
-            pred, info, fitted = global_models.fit_predict(model, X, y, Xf, n_jobs=args.n_jobs)
+            pred, info, fitted = global_models.fit_predict(model, X, y, Xf, n_jobs=args.n_jobs, lgbm_params=lgbm_params)
             keys = keys.assign(pred=pred)
             order = keys.pivot(index="series_id", columns="d_num", values="pred").loc[ids]
             matrix = order.to_numpy()

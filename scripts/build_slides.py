@@ -106,16 +106,21 @@ def main():
     d.columns = ["Mô hình", "MAE", "RMSE", "RMSSE", "R²", "fit+predict (s)"]
     slide("Kết quả Test (d_1914–1941)", "Thủy Tiên: Test chạy một lần sau config-freeze; refit d_1–1913.", table=d,
           caption="Nguồn: results/tables/test/test_overall.csv; cùng mẫu, cùng chính sách metric.")
-    slide("Theo nhóm nhu cầu", "Thanh Tiền (F08): nhóm theo tỷ lệ ngày 0 trên Train.", image=F / "test" / "test_rmsse_by_demand_class.png",
-          bullets=[f"Tốt nhất tổng thể trên Test: {LABEL[best_t]} (RMSSE {test.loc[best_t, 'macro_rmsse']:.3f}) so với Seasonal Naive {snaive_t['macro_rmsse']:.3f}",
-                   "Xem hình: mô hình mạnh/yếu theo nhóm; chỉ là liên hệ"])
+    cls = pd.read_csv(T / "test" / "test_by_demand_class.csv").pivot(index="demand_class", columns="model", values="rmsse")
+    c = lambda x: f"{x:.3f}".replace(".", ",")
+    hz, lz = cls.loc["high_zero(>0.8)"], cls.loc["low_zero(<=0.5)"]
+    trees = [hz[m] for m in ("lightgbm", "xgboost", "catboost")]
+    slide("Theo nhóm nhu cầu", "Thanh Tiền (F08): nhóm theo tỷ lệ ngày 0 trên Train; số lấy từ test_by_demand_class.csv.", image=F / "test" / "test_rmsse_by_demand_class.png",
+          bullets=[f"Hàng bán chậm (trên 80% ngày không bán): ETS {c(hz['ets'])}, Croston {c(hz['croston'])}, ba mô hình cây {c(min(trees))}–{c(max(trees))}",
+                   f"Hàng bán thường xuyên (tối đa 50% ngày không bán): ETS {c(lz['ets'])}, CatBoost {c(lz['catboost'])}",
+                   "Chỉ là liên hệ trên một cửa sổ 28 ngày"])
     slide("Theo thứ trong tuần và horizon", "Thanh Tiền (F08).", image=F / "test" / "test_mae_by_horizon.png",
           bullets=["MAE gộp theo horizon 1–28", "Sai số cao hơn vào cuối tuần (Thứ Bảy, Chủ nhật)"])
     slide("Đánh đổi độ chính xác và thời gian", "Tuấn Hải/Thủy Tiên: không so trực tiếp runtime local và global.", image=F / "test" / "test_accuracy_runtime.png",
           bullets=["Thời gian: local = tổng fit+predict từng chuỗi; global = fit toàn mẫu", "CatBoost mặc định chậm nhất trên CPU 4 lõi"])
     slide("Insight và giới hạn", "Thủy Tiên: kết luận gắn với bảng/hình; nêu giới hạn.",
           ["Một cửa sổ Test 28 ngày; mẫu 1.200 chuỗi", "Khác biệt input giữa local và global gây nhiễu thứ hạng", "Giả định giá tương lai; importance không phải nhân quả",
-           "Optuna, stacking, SBA, ablation: cắt, không chạy", "Smoke ≠ tái lập toàn bộ"])
+           "Phần tùy chọn: mới có Validation (Optuna, SBA, ablation); stacking và Test chưa chạy", "Smoke ≠ tái lập toàn bộ"])
     slide("Kết luận và hướng phát triển", "Tuấn Hải (W08/P05).",
           [f"Mô hình tốt nhất trên Test theo macro-RMSSE: {LABEL[best_t]}", "Mọi mô hình cải thiện rõ so với Seasonal Naive (xem bảng)", "Hướng: rolling-origin nhiều mùa, WRMSSE phân cấp, mô phỏng tồn kho, dự báo xác suất"])
     slide("Q&A", "Cả nhóm: xem report/qa.md.", ["Câu hỏi dự kiến: horizon 28, lag ≥ 28, RMSSE vs WRMSSE, R² âm, AICc, Croston z/p, hệ số LR, boosting cộng cây, giá tương lai, local/global"])

@@ -97,7 +97,7 @@ Mọi dự báo được cắt $\max(\hat y,0)$ (doanh số không âm), không 
 
 ### 3.10. Tối ưu và kết hợp dự báo
 
-Optuna (LightGBM Tuned), stacking Ridge, Croston SBA và ablation LightGBM bỏ giá/sự kiện **không được chạy** do ưu tiên lõi Validation/Test trong thời gian có hạn (`configs/freeze.yaml`); vì vậy báo cáo chỉ nêu cấu hình mặc định và không có số liệu tuning hay stacking.
+Bốn phần tùy chọn có mã nguồn và kiểm thử (PR #24). **Đã chạy trên Validation:** Optuna cho LightGBM (30 lượt, chỉ dùng nhãn Validation; Tuned đạt macro-RMSSE 0,7447 so với 0,7496 của Default, nên được chọn), Croston SBA (0,7425 so với 0,7447 của Croston cổ điển) và ablation LightGBM bỏ nhóm giá/sự kiện (0,7479). Chênh lệch giữa Tuned và Default được đo trên đúng cửa sổ dùng để chọn nên hơi lạc quan; Test mới là phép kiểm độc lập. **Chưa có kết quả:** stacking Ridge (chờ dự báo ngoài mẫu của CatBoost) và **toàn bộ phần Test của các mô hình tùy chọn** (cần tag `config-freeze-v2`, chưa tạo vì chờ các thành viên review). Vì nhãn Test của 7 mô hình lõi đã được mở trước đó, Test của phần tùy chọn sẽ không còn là dữ liệu giữ lại hoàn toàn. Các số tùy chọn ở trên chưa nằm trong các bảng 4.x của bản thảo, vốn chỉ gồm 7 mô hình lõi.
 
 ## 4. Thực nghiệm và đánh giá
 
@@ -127,7 +127,7 @@ Với $e_{i,h}=y_{i,T+h}-\hat y_{i,T+h}$ và $H=28$:
 | val-20261115T073404Z-20b22f7 | validation | d_1885 | CatBoost | 20b22f7 | 4 | 3.13.18 |
 <!-- /TABLE -->
 
-Seed 42, hash manifest mẫu `68d7acc8…`, không có chuỗi nào phải fallback sang Seasonal Naive ở cả Validation và Test (`diag_fallbacks.csv` không được tạo). Không có Optuna, stacking, SBA hay ablation: các phần tùy chọn này bị cắt (xem `configs/freeze.yaml`).
+Seed 42, hash manifest mẫu `68d7acc8…`, không có chuỗi nào phải fallback sang Seasonal Naive ở cả Validation và Test (`diag_fallbacks.csv` không được tạo). Các phần tùy chọn (Optuna, stacking, SBA, ablation) được mô tả ở mục 3.10; cấu hình lõi ở `configs/freeze.yaml` không đổi.
 
 **Kết quả Validation (d_1886–d_1913, 28 ngày; chọn cấu hình, không tuning).**
 
@@ -362,7 +362,7 @@ Tiêu chí quyết định xếp hạng: macro-RMSSE trung bình theo chuỗi n�
 
 *Hình 6. Sơ đồ minh họa cơ chế cộng cây trên dữ liệu giả; không phải cây học được trên M5.*
 
-**Giới hạn của thực nghiệm.** (i) Một cửa sổ Test 28 ngày, một mẫu 1.200 chuỗi (lệch về phía chuỗi gián đoạn mạnh hơn toàn tập). (ii) Khác biệt input giữa mô hình cục bộ (chỉ lịch sử doanh số) và global (thêm giá/lịch/SNAP/nhóm). (iii) Giả định giá ngày dự báo được biết trước. (iv) Chưa có khoảng tin cậy; các chuỗi không độc lập (cùng cửa hàng, cùng ngày). (v) Runtime local và global khác phạm vi, phần cứng Kaggle không cố định giữa các lần. (vi) Optuna, stacking, SBA, ablation không chạy. (vii) Smoke reproduction chỉ kiểm tra chạy được trên tập nhỏ, không phải tái lập đầy đủ. (viii) Việc kiểm tra bằng AI không thay thế đối chiếu và review của các thành viên. (ix) Trường `git_sha` trong `environment.json` của các run (20b22f7, 4cc19f7, 4994dda) là SHA trước khi lịch sử commit được viết lại sang tiếng Việt và bỏ dòng đồng tác giả; các SHA này không còn trong lịch sử mới nhưng cây file giữ nguyên, và mã chạy mô hình của các run giống nhau (khác nhau chỉ ở các commit sau về notebook và công cụ báo cáo).
+**Giới hạn của thực nghiệm.** (i) Một cửa sổ Test 28 ngày, một mẫu 1.200 chuỗi (lệch về phía chuỗi gián đoạn mạnh hơn toàn tập). (ii) Khác biệt input giữa mô hình cục bộ (chỉ lịch sử doanh số) và global (thêm giá/lịch/SNAP/nhóm). (iii) Giả định giá ngày dự báo được biết trước. (iv) Chưa có khoảng tin cậy; các chuỗi không độc lập (cùng cửa hàng, cùng ngày). (v) Runtime local và global khác phạm vi, phần cứng Kaggle không cố định giữa các lần. (vi) Phần tùy chọn mới có kết quả Validation (Optuna, SBA, ablation); stacking và Test của phần tùy chọn chưa chạy, và Test đó sẽ không còn là dữ liệu giữ lại hoàn toàn. (vii) Smoke reproduction chỉ kiểm tra chạy được trên tập nhỏ, không phải tái lập đầy đủ. (viii) Việc kiểm tra bằng AI không thay thế đối chiếu và review của các thành viên. (ix) Trường `git_sha` trong `environment.json` của các run (20b22f7, 4cc19f7, 4994dda) là SHA trước khi lịch sử commit được viết lại sang tiếng Việt và bỏ dòng đồng tác giả; các SHA này không còn trong lịch sử mới nhưng cây file giữ nguyên, và mã chạy mô hình của các run giống nhau (khác nhau chỉ ở các commit sau về notebook và công cụ báo cáo).
 
 ## 5. Kết luận và hướng phát triển
 

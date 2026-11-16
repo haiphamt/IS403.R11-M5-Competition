@@ -114,6 +114,10 @@ def model_parameters(name, model):
         return model.named_steps["lr"].get_params()
     if name == "catboost":
         return {**model.get_all_params()}
+    if name == "xgboost":  # get_params() leaves unset values as None; record what the booster really used
+        import json
+        return {**model.get_params(), "n_boosted_rounds": model.get_booster().num_boosted_rounds(),
+                "booster_config": json.loads(model.get_booster().save_config())}
     return model.get_params()
 
 

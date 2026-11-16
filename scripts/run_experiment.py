@@ -209,7 +209,7 @@ def main():
     (run_dir / "timings.json").write_text(json.dumps(timings, indent=2), encoding="utf-8")
     raw_dir = Path(args.data_dir) if args.data_dir else ROOT / "data" / "raw"
     env = {"run_id": run_id, "split": split, "origin_day": origin, "git_sha": sha,
-           "git_dirty": bool(git("status", "--porcelain")), "utc": datetime.now(timezone.utc).isoformat(),
+           "git_dirty": bool(git("status", "--porcelain", "--", ".", ":(exclude)results")), "utc": datetime.now(timezone.utc).isoformat(),
            "python": sys.version, "platform": platform.platform(), "machine": platform.machine(),
            "cpu_count": __import__("os").cpu_count(), "packages": package_versions(),
            "sample": {"n_series": len(ids), "manifest_sha256": manifest_hash(manifest[manifest["series_id"].isin(ids)]),

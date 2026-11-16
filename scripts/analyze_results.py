@@ -26,7 +26,9 @@ from m5.split import to_wide  # noqa: E402
 
 ORDER = ["seasonal_naive", "linear_regression", "ets", "croston", "lightgbm", "xgboost", "catboost"]
 LABEL = {"seasonal_naive": "Seasonal Naive", "linear_regression": "Linear Regression", "ets": "ETS",
-         "croston": "Croston", "lightgbm": "LightGBM", "xgboost": "XGBoost", "catboost": "CatBoost"}
+         "croston": "Croston", "lightgbm": "LightGBM", "xgboost": "XGBoost", "catboost": "CatBoost",
+         "croston_sba": "Croston SBA", "lightgbm_noprice": "LightGBM bỏ giá/sự kiện",
+         "lightgbm_tuned": "LightGBM Tuned", "stacking": "Stacking"}
 
 
 def order(models):

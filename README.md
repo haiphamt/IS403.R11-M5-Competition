@@ -316,7 +316,7 @@ không thay thế bằng chứng chạy trên dữ liệu thật ở Colab/Kaggl
 
 Môi trường của các lần chạy chính: Python 3.13 (CPU trên Kaggle), cài bằng `pip install -r requirements.txt`
 (trên máy có proxy TLS dùng thêm `--use-feature=truststore`). Phiên bản thực dùng
-của mỗi run được ghi trong `environment.json`.
+của mỗi run được ghi trong `environment.json`. Giữ đúng bản ghim: `xgboost==3.4.1` (cần Python ≥ 3.12) cho dự báo khác với 3.2.0 (macro-RMSSE Validation 0,7500 so với 0,7493), nên tái lập chính xác XGBoost cần đúng phiên bản.
 
 ```bash
 python scripts/prepare_sample_split.py                    # D02/D03/D07: mẫu 1.200 chuỗi, split parquet, báo cáo dữ liệu

@@ -61,11 +61,11 @@ Khi dự báo Test, mọi mô hình được fit lại trên d_1–d_1913 theo c
 
 ### 3.2. Đặc trưng và chống rò rỉ
 
-Với chuỗi $i$ và ngày $t$, đặc trưng lõi là: $\text{lag}_k=y_{i,t-k}$, $k\in\{28,35,42\}$; $\text{rmean}_w=\frac1w\sum_{j=0}^{w-1}y_{i,t-28-j}$ và $\text{rstd}_w$ (độ lệch chuẩn mẫu) với $w\in\{7,28\}$ trên chuỗi đã lùi 28 ngày; `wday`, `month`, `year`; hai cặp sự kiện (tên, loại); SNAP của bang; `sell_price` và cờ `price_missing`; định danh `dept_id`, `cat_id`, `store_id`, `state_id`. Với origin $T$ và $t\le T+28$, mọi nguồn $y$ đều $\le T$; nhãn từ $T+1$ trở đi bị che bằng NaN trước khi dựng đặc trưng. Kiểm thử (`tests/test_no_leakage.py`) làm hỏng toàn bộ nhãn sau origin 1885 và 1913 rồi xác nhận đặc trưng và target không đổi, đồng thời kiểm ranh giới giữa các chuỗi. Đây là dự báo *trực tiếp* cả 28 ngày từ một origin, không đệ quy.
+Với chuỗi $i$ và ngày $t$, đặc trưng lõi là: $\text{lag}_k=y_{i,t-k}$, $k\in\{28,35,42\}$; $\text{rmean}_w=\frac1w\sum_{j=0}^{w-1}y_{i,t-28-j}$ và $\text{rstd}_w$ (độ lệch chuẩn mẫu) với $w\in\{7,28\}$ trên chuỗi đã lùi 28 ngày; `wday`, `month`, `year`; hai cặp sự kiện (tên, loại); SNAP của bang; `sell_price` và cờ `price_missing`; định danh `dept_id`, `cat_id`, `store_id`, `state_id`. Với origin $T$ và $t\le T+28$, mọi nguồn $y$ đều $\le T$; nhãn từ $T+1$ trở đi bị che bằng NaN trước khi dựng đặc trưng. Kiểm thử (`tests/test_no_leakage.py`) làm hỏng toàn bộ nhãn sau origin 1885 và 1913 rồi xác nhận đặc trưng và target không đổi, đồng thời kiểm ranh giới giữa các chuỗi. Phép thử này cũng được lặp lại trên dữ liệu thật (1.200 chuỗi, cả hai origin): làm hỏng mọi nhãn sau origin không đổi bảng đặc trưng, nhãn huấn luyện và dự báo của LightGBM, còn đổi một nhãn trước origin thì có đổi (đối chứng dương). Đây là dự báo *trực tiếp* cả 28 ngày từ một origin, không đệ quy.
 
 Giá thiếu (trước ngày sản phẩm được niêm yết) giữ NaN kèm `price_missing`, không back-fill; 21,3% ô chuỗi–ngày Train thiếu giá. **Giả định giá tương lai:** pipeline dùng giá tuần của chính ngày cần dự báo (bảng giá M5 công bố đến d_1969). Trong vận hành, điều này chỉ đúng nếu giá được lập kế hoạch trước; đây là giả định phải nêu, không phải bằng chứng nhân quả của giá. `item_id` không dùng làm biến phân loại (cardinality cao, đã có lag/rolling mang mức doanh số của chuỗi), khác danh sách trong `configs/features.yaml`.
 
-Phép impute (trung vị), chuẩn hóa và mã hóa one-hot của Linear Regression được fit chỉ trên các dòng huấn luyện của fold tương ứng. Không dùng target encoding.
+Phép impute (trung vị), chuẩn hóa và mã hóa one-hot của Linear Regression được fit chỉ trên các dòng huấn luyện (ngày đích ≤ origin), không dùng nhãn của giai đoạn dự báo. Không dùng target encoding.
 
 ### 3.3. Seasonal Naive
 
@@ -225,9 +225,9 @@ Tiêu chí quyết định xếp hạng: macro-RMSSE trung bình theo chuỗi n�
 <!-- TABLE:test_cat_rmsse -->
 | cat_id | Seasonal Naive | Linear Regression | ETS | Croston | LightGBM | XGBoost | CatBoost |
 |---|---|---|---|---|---|---|---|
-| FOODS | 0,992 | 0,800 | 0,784 | 0,792 | 0,794 | 0,798 | 0,795 |
+| FOODS | 0,992 | 0,800 | 0,784 | 0,792 | 0,795 | 0,799 | 0,795 |
 | HOBBIES | 0,964 | 0,742 | 0,711 | 0,719 | 0,732 | 0,729 | 0,728 |
-| HOUSEHOLD | 1,034 | 0,786 | 0,761 | 0,779 | 0,777 | 0,777 | 0,780 |
+| HOUSEHOLD | 1,034 | 0,786 | 0,761 | 0,779 | 0,777 | 0,778 | 0,781 |
 <!-- /TABLE -->
 
 *Bảng 5c. RMSSE macro theo bang (Test).*
@@ -236,11 +236,11 @@ Tiêu chí quyết định xếp hạng: macro-RMSSE trung bình theo chuỗi n�
 | state | Seasonal Naive | Linear Regression | ETS | Croston | LightGBM | XGBoost | CatBoost |
 |---|---|---|---|---|---|---|---|
 | CA | 1,020 | 0,800 | 0,779 | 0,796 | 0,792 | 0,795 | 0,793 |
-| TX | 0,959 | 0,743 | 0,715 | 0,724 | 0,733 | 0,732 | 0,732 |
+| TX | 0,958 | 0,743 | 0,715 | 0,724 | 0,733 | 0,732 | 0,732 |
 | WI | 1,005 | 0,776 | 0,753 | 0,760 | 0,771 | 0,768 | 0,769 |
 <!-- /TABLE -->
 
-Ở nhóm chuỗi ít số 0 (≤ 0,5), các mô hình sát nhau (0,686–0,710 trên Test): ETS dẫn nhẹ, Croston kém nhất nhóm vì dự báo phẳng không bắt chu kỳ tuần. Ở nhóm gián đoạn mạnh (> 0,8), ETS và Croston (0,780 và 0,785) tốt hơn rõ LightGBM, XGBoost, CatBoost và Linear Regression (0,804–0,814): khoảng cách tăng theo mức gián đoạn. Theo ngành hàng, HOBBIES có sai số chuẩn hóa thấp nhất và FOODS cao nhất ở hầu hết mô hình; theo bang, TX thấp nhất. Các khác biệt giữa nhóm là mô tả, không nên diễn giải nhân quả.
+Ở nhóm chuỗi ít số 0 (≤ 0,5), các mô hình sát nhau (0,686–0,711 trên Test): ETS dẫn nhẹ, Croston kém nhất nhóm vì dự báo phẳng không bắt chu kỳ tuần. Ở nhóm gián đoạn mạnh (> 0,8), ETS và Croston (0,780 và 0,785) tốt hơn rõ LightGBM, XGBoost, CatBoost và Linear Regression (0,804–0,814): khoảng cách tăng theo mức gián đoạn. Theo ngành hàng, HOBBIES có sai số chuẩn hóa thấp nhất và FOODS cao nhất ở hầu hết mô hình; theo bang, TX thấp nhất. Các khác biệt giữa nhóm là mô tả, không nên diễn giải nhân quả.
 
 *Hình 1. RMSSE theo nhóm nhu cầu (Test), `results/figures/test/test_rmsse_by_demand_class.png`.*
 
@@ -252,7 +252,7 @@ Tiêu chí quyết định xếp hạng: macro-RMSSE trung bình theo chuỗi n�
 | Mô hình | win_rate_vs_snaive | tie_rate | median_mae_diff |
 |---|---|---|---|
 | Linear Regression | 0,586 | 0,000 | -0,056 |
-| ETS | 0,621 | 0,005 | -0,074 |
+| ETS | 0,621 | 0,005 | -0,075 |
 | Croston | 0,605 | 0,007 | -0,067 |
 | LightGBM | 0,580 | 0,000 | -0,050 |
 | XGBoost | 0,585 | 0,000 | -0,050 |
@@ -267,11 +267,11 @@ Tiêu chí quyết định xếp hạng: macro-RMSSE trung bình theo chuỗi n�
 | weekday | Seasonal Naive | Linear Regression | ETS | Croston | LightGBM | XGBoost | CatBoost |
 |---|---|---|---|---|---|---|---|
 | Monday | 1,163 | 0,956 | 0,928 | 0,967 | 0,974 | 0,965 | 0,967 |
-| Tuesday | 1,103 | 0,908 | 0,884 | 0,936 | 0,920 | 0,921 | 0,923 |
+| Tuesday | 1,104 | 0,908 | 0,884 | 0,936 | 0,920 | 0,921 | 0,923 |
 | Wednesday | 1,032 | 0,891 | 0,890 | 0,939 | 0,909 | 0,905 | 0,911 |
-| Thursday | 1,054 | 0,869 | 0,877 | 0,926 | 0,886 | 0,892 | 0,881 |
+| Thursday | 1,054 | 0,869 | 0,877 | 0,926 | 0,886 | 0,892 | 0,882 |
 | Friday | 1,125 | 0,956 | 0,922 | 0,941 | 0,967 | 0,976 | 0,964 |
-| Saturday | 1,294 | 1,139 | 1,069 | 1,081 | 1,114 | 1,132 | 1,110 |
+| Saturday | 1,294 | 1,140 | 1,069 | 1,081 | 1,114 | 1,132 | 1,110 |
 | Sunday | 1,328 | 1,140 | 1,101 | 1,110 | 1,119 | 1,115 | 1,129 |
 <!-- /TABLE -->
 
@@ -303,7 +303,7 @@ Tiêu chí quyết định xếp hạng: macro-RMSSE trung bình theo chuỗi n�
 
 **Trả lời Q4 — cơ chế.** 
 
-*Seasonal Naive* sao chép tuần cuối cùng kể cả nhiễu và số 0 của tuần đó, nên với doanh số thấp (nhiều 0/1) phương sai của dự báo gần bằng phương sai của dữ liệu: RMSSE ≈ 1, kém nhất ở mọi nhóm.
+*Seasonal Naive* sao chép tuần cuối cùng kể cả nhiễu và số 0 của tuần đó, nên sai số của nó cùng cỡ với mẫu số của RMSSE (sai số của dự báo ngây thơ một bước trên lịch sử huấn luyện, mà Seasonal Naive cũng là một dự báo ngây thơ): RMSSE ≈ 1, kém nhất ở mọi nhóm.
 
 *ETS* chọn toàn bộ cấu trúc có sai số cộng (A); ở run Validation: ETS(A,N,A) 598 chuỗi, ETS(A,N,N) 433, ETS(A,Ad,A) 104, ETS(A,Ad,N) 55, các cấu trúc có xu hướng thẳng rất ít (Bảng 9). α trung bình 0,055 (trung vị 0,034): làm mượt rất mạnh nên mức dự báo ổn định, phù hợp với chuỗi thưa nhiều nhiễu; γ gần 0 nghĩa là chu kỳ tuần được giữ gần như cố định, không đổi theo thời gian. Khoảng 41% chuỗi (496/1.200) không chọn thành phần mùa. 
 
@@ -340,7 +340,7 @@ Tiêu chí quyết định xếp hạng: macro-RMSSE trung bình theo chuỗi n�
 | FOODS_2_117_CA_4 | 1,767 | 511,152 | 0,003 |
 <!-- /TABLE -->
 
-*Linear Regression* dùng cùng đặc trưng với boosting nhưng chỉ thể hiện quan hệ tuyến tính: hệ số lớn nhất thuộc về `rolling_mean_28` (1,18) và `rolling_mean_7` (0,67) (biến đã chuẩn hóa), tức dự báo chủ yếu là mức doanh số gần đây; ngoài hai biến này hệ số âm lớn nhất là ngày Giáng sinh (−0,82, ngày doanh số gần như bằng 0) và các ngày trong tuần so với nhóm gốc, nên phần điều chỉnh theo lịch/sự kiện là chủ yếu; nó cho nhiều dự báo âm nhất (6–7% số điểm trước khi cắt) nên kém ở nhóm gián đoạn mạnh.
+*Linear Regression* dùng cùng đặc trưng với boosting nhưng chỉ thể hiện quan hệ tuyến tính: hệ số lớn nhất thuộc về `rolling_mean_28` (1,18) và `rolling_mean_7` (0,67) (biến đã chuẩn hóa), tức dự báo chủ yếu là mức doanh số gần đây; ngoài hai biến này hệ số âm lớn nhất là ngày Giáng sinh (−0,82, ngày doanh số gần như bằng 0) và các ngày trong tuần so với nhóm gốc, nên phần điều chỉnh còn lại chủ yếu đến từ lịch và sự kiện; nó cho nhiều dự báo âm nhất (6–7% số điểm trước khi cắt) nên kém ở nhóm gián đoạn mạnh.
 
 <!-- TABLE:lr_coef -->
 | Biến | Hệ số |
@@ -359,7 +359,7 @@ Tiêu chí quyết định xếp hạng: macro-RMSSE trung bình theo chuỗi n�
 | cat__event_name_1_MemorialDay | 0,1718 |
 <!-- /TABLE -->
 
-*LightGBM, XGBoost, CatBoost* cộng dần cây, importance (Hình 5) tập trung vào `rolling_mean_28` (khoảng 70–75% gain ở LightGBM/XGBoost) và `rolling_mean_7`; giá (`sell_price`), tháng, thứ và nhóm cửa hàng đóng góp nhỏ. Vì dự báo chủ yếu dựa vào mức doanh số trượt, các mô hình global chủ yếu tái tạo mức doanh số làm mượt và không vượt được ETS trên macro-RMSSE; thông tin giá, lịch và nhóm hàng dường như chỉ bổ sung nhỏ (chưa kiểm chứng bằng ablation, X02 bị cắt). Importance chỉ cho biết đóng góp vào dự báo, không phải tác động nhân quả của giá hay SNAP.
+*LightGBM, XGBoost, CatBoost* cộng dần cây, importance (Hình 5) tập trung vào `rolling_mean_28` (khoảng 70–75% gain ở LightGBM/XGBoost) và `rolling_mean_7`; giá (`sell_price`), tháng, thứ và nhóm cửa hàng đóng góp nhỏ ở LightGBM/XGBoost (CatBoost gán `sell_price` khoảng 10% theo thước đo khác, không so trực tiếp). Vì dự báo chủ yếu dựa vào mức doanh số trượt, các mô hình global chủ yếu tái tạo mức doanh số làm mượt và không vượt được ETS trên macro-RMSSE; ablation X02 trên Validation cho thấy bỏ nhóm giá và sự kiện không làm xấu LightGBM (macro-RMSSE 0,7479 so với 0,7496 khi giữ), tức thông tin này không đem lại cải thiện đo được trên một cửa sổ; chênh lệch 0,0017 nhỏ hơn mức dao động do phiên bản thư viện (giới hạn x) và chưa có Test. Importance chỉ cho biết đóng góp vào dự báo, không phải tác động nhân quả của giá hay SNAP.
 
 <!-- TABLE:importance -->
 | Mô hình | Top 5 đặc trưng (tỷ trọng) |
@@ -377,7 +377,7 @@ Tiêu chí quyết định xếp hạng: macro-RMSSE trung bình theo chuỗi n�
 
 *Hình 6. Sơ đồ minh họa cơ chế cộng cây trên dữ liệu giả; không phải cây học được trên M5.*
 
-**Giới hạn của thực nghiệm.** (i) Một cửa sổ Test 28 ngày, một mẫu 1.200 chuỗi (lệch về phía chuỗi gián đoạn mạnh hơn toàn tập). (ii) Khác biệt input giữa mô hình cục bộ (chỉ lịch sử doanh số) và global (thêm giá/lịch/SNAP/nhóm). (iii) Giả định giá ngày dự báo được biết trước. (iv) Chưa có khoảng tin cậy; các chuỗi không độc lập (cùng cửa hàng, cùng ngày). (v) Runtime local và global khác phạm vi, phần cứng Kaggle không cố định giữa các lần. (vi) Phần tùy chọn mới có kết quả Validation (Optuna, SBA, ablation, stacking); Test của phần tùy chọn chưa chạy, và Test đó sẽ không còn là dữ liệu giữ lại hoàn toàn. (vii) Smoke reproduction chỉ kiểm tra chạy được trên tập nhỏ, không phải tái lập đầy đủ. (viii) Việc kiểm tra bằng AI không thay thế đối chiếu và review của các thành viên. (ix) Trường `git_sha` trong `environment.json` của các run (20b22f7, 4cc19f7, 4994dda) là SHA trước khi lịch sử commit được viết lại sang tiếng Việt và bỏ dòng đồng tác giả; các SHA này không còn trong nhánh chính nhưng chỉ còn thẻ `archive/pre-rewrite-4994dda` trên GitHub (thẻ của 20b22f7 và 4cc19f7 đã gỡ vì lịch sử cũ có dòng đồng tác giả AI); bảng run → SHA cũ → commit tương đương hiện nay (cùng tree hash) ở `results/pre_rewrite_sha_map.csv`, và `src/` cùng `scripts/run_experiment.py` của cả ba SHA đã được kiểm giống hệt thẻ `config-freeze` bằng `git diff` trước khi gỡ; cây file giữ nguyên, và mã chạy mô hình của các run giống nhau (khác nhau chỉ ở các commit sau về notebook và công cụ báo cáo).
+**Giới hạn của thực nghiệm.** (i) Một cửa sổ Test 28 ngày, một mẫu 1.200 chuỗi (lệch về phía chuỗi gián đoạn mạnh hơn toàn tập). (ii) Khác biệt input giữa mô hình cục bộ (chỉ lịch sử doanh số) và global (thêm giá/lịch/SNAP/nhóm). (iii) Giả định giá ngày dự báo được biết trước. (iv) Chưa có khoảng tin cậy; các chuỗi không độc lập (cùng cửa hàng, cùng ngày). (v) Runtime local và global khác phạm vi, phần cứng Kaggle không cố định giữa các lần. (vi) Phần tùy chọn mới có kết quả Validation (Optuna, SBA, ablation, stacking); Test của phần tùy chọn chưa chạy, và Test đó sẽ không còn là dữ liệu giữ lại hoàn toàn. (vii) Smoke reproduction chỉ kiểm tra chạy được trên tập nhỏ, không phải tái lập đầy đủ. (viii) Việc kiểm tra bằng AI không thay thế đối chiếu và review của các thành viên. (ix) Trường `git_sha` trong `environment.json` của các run (20b22f7, 4cc19f7, 4994dda) là SHA trước khi lịch sử commit được viết lại sang tiếng Việt và bỏ dòng đồng tác giả; các SHA này không còn trong nhánh chính nhưng chỉ còn thẻ `archive/pre-rewrite-4994dda` trên GitHub (thẻ của 20b22f7 và 4cc19f7 đã gỡ vì lịch sử cũ có dòng đồng tác giả AI); bảng run → SHA cũ → commit tương đương hiện nay (cùng tree hash) ở `results/pre_rewrite_sha_map.csv`, và `src/` cùng `scripts/run_experiment.py` của cả ba SHA đã được kiểm giống hệt thẻ `config-freeze` bằng `git diff` trước khi gỡ; cây file giữ nguyên, và mã chạy mô hình của các run giống nhau (khác nhau chỉ ở các commit sau về notebook và công cụ báo cáo). (x) Dự báo XGBoost phụ thuộc phiên bản thư viện: chạy lại ở xgboost 3.2.0 (run Kaggle dùng 3.4.1) cho macro-RMSSE Validation 0,7493 thay vì 0,7500 và dự báo lệch trung bình 0,155 đơn vị; chênh lệch này đủ đảo thứ tự giữa XGBoost và LightGBM (0,7496), nên thứ hạng trong nhóm boosting không bền vững, và tái lập chính xác cần ghim đúng `requirements.txt` (chưa tự chạy được bản 3.4.1 vì cần Python ≥ 3.12; Tiền Lê tái lập khớp bản đã lưu với bản ghim). (xi) LightGBM Tuned được chọn bằng nhãn Validation và stacking dùng nó làm mô hình cơ sở nên thừa hưởng một phần lạc quan này; Test độc lập chưa có.
 
 ## 5. Kết luận và hướng phát triển
 
@@ -385,7 +385,7 @@ Trên mẫu 1.200 chuỗi Walmart M5 với horizon 28 ngày: (Q1) mọi mô hìn
 
 Giới hạn: mẫu và cửa sổ đánh giá đơn, giả định giá tương lai, khác biệt input local/global, chưa đo chi phí tồn kho nên chưa có kết luận về lợi ích kinh doanh hay giảm tồn kho; WRMSSE không được tính.
 
-Hướng phát triển: rolling-origin trên nhiều mùa và khoảng tin cậy phụ thuộc thời gian; mở rộng mẫu và đánh giá phân cấp theo WRMSSE; Test độc lập cho các phần tùy chọn (Tuned, SBA, ablation, stacking) sau khi chốt `config-freeze-v2`, thêm mốc backtest cho stacking; mô phỏng quyết định tồn kho với chi phí thực; dự báo xác suất. Ưu tiên theo hạn chế quan sát được: rolling-origin và ablation giá trước.
+Hướng phát triển: rolling-origin trên nhiều mùa và khoảng tin cậy phụ thuộc thời gian; mở rộng mẫu và đánh giá phân cấp theo WRMSSE; Test độc lập cho các phần tùy chọn (Tuned, SBA, ablation, stacking) sau khi chốt `config-freeze-v2`, thêm mốc backtest cho stacking; mô phỏng quyết định tồn kho với chi phí thực; dự báo xác suất. Ưu tiên theo hạn chế quan sát được: rolling-origin trước, rồi Test độc lập cho ablation giá/sự kiện.
 
 ## Tài liệu tham khảo
 

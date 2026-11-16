@@ -1,0 +1,13 @@
+{
+  "origin": 1885,
+  "metric": "validation macro_rmsse (clip at 0)",
+  "n_trials": 30,
+  "tuning_seconds": 1294.6250995789999,
+  "best_value": 0.744743338842346,
+  "default_value": 0.7496064651167381,
+  "default_fit_s": 13.06703187200003,
+  "choice": "tuned",
+  "optuna": "5.0.0",
+  "seed": 42,
+  "note": "best of the trials is compared with Default on the same Validation window, so the gap is optimistic; Test is the independent check"
+}

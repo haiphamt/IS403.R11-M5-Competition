@@ -1,7 +1,11 @@
 # config-freeze v1: everything that must not change after the Test labels are opened.
 version: 1
 code_sha_validation_runs: 20b22f724337698512504b827c2ebeba544da1c0  # mã trước khi viết lại lịch sử, không còn trong Git (báo cáo, giới hạn ix)
-archive_tags:   # bảng run -> SHA cũ ở results/pre_rewrite_sha_map.csv
+pre_rewrite_equivalents:   # SHA cũ -> commit tương đương trong lịch sử hiện tại (cùng tree hash = nội dung tệp giống từng byte); chi tiết ở results/pre_rewrite_sha_map.csv
+  20b22f7: d8fe7a1375c3be156aa6a5f657d9f8c61defd3d5   # Gộp PR #6
+  4cc19f7: c1985e1db0ae8ec7b075fa804b0dcdc292e337f5   # Gộp PR #13
+  4994dda: b080335660de0b2b3baab670157b6263c43be1d5   # Gộp PR #15
+archive_tags:
   - archive/pre-rewrite-4994dda   # run Test CatBoost; lịch sử sạch (không có dòng đồng tác giả AI), còn trên GitHub
   # archive/pre-rewrite-20b22f7 và archive/pre-rewrite-4cc19f7 đã gỡ khỏi GitHub: lịch sử của chúng có 10 commit mang dòng đồng tác giả Claude; chỉ còn bản cục bộ.
 code_ref_after_rewrite: 9dca59fd979e8bcfdaceec98b1cefe0f9c7c5866    # thẻ config-freeze; src/, configs/, run_experiment.py giống hệt main 7e2543c

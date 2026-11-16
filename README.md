@@ -329,7 +329,8 @@ python scripts/run_experiment.py --split test             # origin d_1913, refit
 - Mẫu và manifest: `data/sample_series_ids.csv` (seed 42, 40 chuỗi x 30 tầng, hash trong
   `results/tables/d07_data_quality_report.json`).
 - Dò ngược `git_sha` trong `environment.json` của các run cũ (20b22f7, 4cc19f7, 4994dda không còn trong lịch sử đã viết lại):
-  xem `results/pre_rewrite_sha_map.csv`; chỉ `4994dda` còn thẻ `archive/pre-rewrite-4994dda` (kiểm tra: `git diff --stat archive/pre-rewrite-4994dda config-freeze -- src scripts/run_experiment.py`,
+  xem `results/pre_rewrite_sha_map.csv`: mỗi SHA cũ có commit tương đương trong lịch sử hiện tại với cùng tree hash
+  (kiểm: `git rev-parse <commit>^{tree}` bằng cột `tree_hash_of_old_sha`). Chỉ `4994dda` còn thẻ `archive/pre-rewrite-4994dda` (kiểm tra: `git diff --stat archive/pre-rewrite-4994dda config-freeze -- src scripts/run_experiment.py`,
   không có dòng nào = giống hệt). Thẻ của `20b22f7` và `4cc19f7` đã gỡ vì lịch sử cũ có dòng đồng tác giả AI; mã của hai SHA này
   đã kiểm giống bản khóa trước khi gỡ (ghi trong bảng map).
 - Mô hình cục bộ theo chuỗi: Seasonal Naive, ETS (AutoETS, chu kỳ 7, AICc), Croston

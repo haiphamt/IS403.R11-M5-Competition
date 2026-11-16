@@ -97,7 +97,19 @@ Mọi dự báo được cắt $\max(\hat y,0)$ (doanh số không âm), không 
 
 ### 3.10. Tối ưu và kết hợp dự báo
 
-Bốn phần tùy chọn có mã nguồn và kiểm thử (PR #24). **Đã chạy trên Validation:** Optuna cho LightGBM (30 lượt, chỉ dùng nhãn Validation; Tuned đạt macro-RMSSE 0,7447 so với 0,7496 của Default, nên được chọn), Croston SBA (0,7425 so với 0,7447 của Croston cổ điển) và ablation LightGBM bỏ nhóm giá/sự kiện (0,7479). Chênh lệch giữa Tuned và Default được đo trên đúng cửa sổ dùng để chọn nên hơi lạc quan; Test mới là phép kiểm độc lập. **Chưa có kết quả:** stacking Ridge (chờ dự báo ngoài mẫu của CatBoost) và **toàn bộ phần Test của các mô hình tùy chọn** (cần tag `config-freeze-v2`, chưa tạo vì chờ các thành viên review). Vì nhãn Test của 7 mô hình lõi đã được mở trước đó, Test của phần tùy chọn sẽ không còn là dữ liệu giữ lại hoàn toàn. Các số tùy chọn ở trên chưa nằm trong các bảng 4.x của bản thảo, vốn chỉ gồm 7 mô hình lõi.
+Bốn phần tùy chọn có mã nguồn và kiểm thử (PR #24). **Đã chạy trên Validation:** Optuna cho LightGBM (30 lượt, chỉ dùng nhãn Validation; Tuned đạt macro-RMSSE 0,7447 so với 0,7496 của Default, nên được chọn), Croston SBA (0,7425 so với 0,7447 của Croston cổ điển) và ablation LightGBM bỏ nhóm giá/sự kiện (0,7479). Chênh lệch giữa Tuned và Default được đo trên đúng cửa sổ dùng để chọn nên hơi lạc quan; Test mới là phép kiểm độc lập. **Chưa có kết quả:** stacking Ridge (chờ dự báo ngoài mẫu của CatBoost) và **toàn bộ phần Test của các mô hình tùy chọn** (cần tag `config-freeze-v2`, chưa tạo vì chờ các thành viên review). Vì nhãn Test của 7 mô hình lõi đã được mở trước đó, Test của phần tùy chọn sẽ không còn là dữ liệu giữ lại hoàn toàn. Bảng dưới đặt các mô hình tùy chọn cạnh bản tham chiếu lõi trên Validation (macro trên 1.200 chuỗi); các bảng 4.x còn lại chỉ gồm 7 mô hình lõi.
+
+<!-- TABLE:val_optional -->
+| Mô hình | MAE (macro) | RMSE (macro) | RMSSE (macro) | fit+predict (s) | Ghi chú |
+|---|---|---|---|---|---|
+| LightGBM | 0,9876 | 1,2797 | 0,7496 | 10,4 | tham chiếu lõi |
+| LightGBM Tuned (Optuna) | 0,9835 | 1,2825 | 0,7447 | 55,2 | T01; thời gian không gồm 1.295 giây tìm tham số |
+| LightGBM bỏ giá/sự kiện | 0,9856 | 1,2822 | 0,7479 | 8,9 | X02 |
+| Croston | 0,9951 | 1,2919 | 0,7447 | 1,4 | tham chiếu lõi |
+| Croston SBA | 0,9817 | 1,2875 | 0,7425 | 0,3 | X01 |
+<!-- /TABLE -->
+
+Thời gian ở bảng trên đến từ các phiên Kaggle khác nhau (run lõi và run tùy chọn chạy ở thời điểm khác nhau, Croston SBA chạy nhanh hơn Croston cổ điển 0,3 giây so với 1,4 giây dù cùng cách tính), nên chỉ đọc theo thứ tự độ lớn và không so trực tiếp giữa các hàng.
 
 ## 4. Thực nghiệm và đánh giá
 

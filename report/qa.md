@@ -1,7 +1,7 @@
 # Câu hỏi – đáp dự kiến khi bảo vệ (đồ án M5, Nhóm 6)
 
 Các câu trả lời dựa trên cấu hình và mã trong repo. Số liệu cụ thể xem `report/draft_report.md`
-và `results/tables/`; không trích số khi chưa có bảng nguồn.
+và `results/tables/`; các số dưới đây lấy từ bảng nguồn nêu kèm.
 
 **1. Vì sao horizon 28 ngày?**
 Đúng với cuộc thi M5 (hai kỳ dự báo 28 ngày) và với chu kỳ bổ sung hàng ngắn hạn của bán lẻ.
@@ -32,7 +32,7 @@ lần có nhu cầu; dự báo phẳng ŷ = z/p. Cài đặt tham chiếu trong 
 được kiểm tra khớp dự báo của statsforecast (smoothing 0,1).
 
 **7. Hệ số Linear Regression nói gì?**
-Hệ số của biến đã chuẩn hóa (median impute + StandardScaler fit trên lịch sử fold) cho thấy liên hệ
+Hệ số của biến đã chuẩn hóa (điền thiếu bằng trung vị rồi chuẩn hóa, khớp trên dữ liệu huấn luyện trước ngày dự báo) cho thấy liên hệ
 điều kiện giữa đặc trưng và doanh số; biến phân loại one-hot bỏ nhóm gốc. Không phải tác động nhân quả.
 
 **8. Boosting cộng cây như thế nào?**
@@ -40,8 +40,9 @@ F_m(x) = F_{m-1}(x) + η f_m(x): mỗi cây mới học phần sai số còn l�
 khác với cây thật học được; importance thật nằm ở `diag_*_importance.csv`.
 
 **9. Default so với Tuned?**
-Core dùng tham số mặc định thư viện (chỉ đặt seed/luồng/khai báo categorical). Tuning bằng Optuna là P1,
-chỉ chạy khi không chặn lõi; xem phần phạm vi trong báo cáo.
+Core dùng tham số mặc định thư viện (chỉ đặt seed/luồng/khai báo categorical). Optuna (30 lượt, chỉ nhãn Validation) cho
+macro-RMSSE Validation 0,7447 so với 0,7496 của Default; chênh lệch đo trên chính cửa sổ chọn nên hơi lạc quan. Test của
+bản Tuned chưa chạy (chờ tag `config-freeze-v2`).
 
 **10. Giá tương lai?**
 Pipeline dùng giá tuần của ngày cần dự báo (bảng giá M5 công bố đến d_1969). Trong vận hành giá tương lai
@@ -58,12 +59,15 @@ Khác biệt input là một yếu tố gây nhiễu khi so thứ hạng; pilot 
 
 **13. Stacking có rò rỉ không?**
 Chỉ hợp lệ khi dự báo đưa vào meta là ngoài mẫu của mô hình cơ sở. Không fit meta hay chọn alpha bằng Test;
-score trên chính tập huấn luyện meta không phải đánh giá độc lập. Trạng thái làm/cắt xem báo cáo.
+score trên chính tập huấn luyện meta không phải đánh giá độc lập. Trạng thái: mã và kiểm thử đã có; kết quả stacking chờ dự báo ngoài mẫu của CatBoost, Test chưa chạy.
 
 **14. Vì sao mô hình thắng/thua?**
-Trả lời bằng bảng theo nhóm nhu cầu/category/bang và đồ thị theo horizon/thứ trong tuần của run đã khóa;
-nêu cơ chế (ví dụ Croston phẳng hợp nhu cầu gián đoạn, Seasonal Naive nhạy nhiễu tuần cuối).
+Trên tập kiểm tra, ETS chính xác nhất (RMSSE trung bình 0,752). Croston gần bằng (0,764) nhưng chỉ chạy khoảng 1,4 giây, so với
+khoảng 1.026 giây của ETS; ba mô hình LightGBM, XGBoost, CatBoost ngang nhau (0,768).
+Với hàng bán chậm (trên 80% số ngày không bán), ETS và Croston (0,780 và 0,785) tốt hơn ba mô hình cây (0,804–0,806), nên với
+nhóm hàng này dùng mô hình làm mượt đơn giản là đủ và tốn ít tài nguyên hơn.
+Phần liên hệ tồn kho mới là gợi ý vì nhóm chưa đo chi phí tồn kho. Nguồn: `results/tables/test/test_overall.csv`, `test_by_demand_class.csv`.
 
 **15. Smoke khác full reproduction thế nào?**
-Smoke chạy cùng pipeline trên subset nhỏ (ví dụ 24 chuỗi) để kiểm tra chạy được end-to-end; không tái lập
+Smoke chạy cùng pipeline trên tập nhỏ (F10: 12 chuỗi, 7 mô hình, 42 bài kiểm thử) để kiểm tra chạy được end-to-end; không tái lập
 các con số toàn mẫu và không dùng Test để phát triển.

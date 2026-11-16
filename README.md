@@ -11,7 +11,9 @@ theo ngày cho từng sản phẩm tại từng cửa hàng trong **28 ngày ti�
   (cấu hình đã khóa tại tag `config-freeze`, xem `configs/freeze.yaml`).
 - Mô hình lõi: Seasonal Naive, Linear Regression, ETS, Croston,
   LightGBM Default, XGBoost và CatBoost.
-- Phần tùy chọn (Optuna, Stacking, Croston SBA, ablation LightGBM) **đã bị cắt, không chạy**.
+- Phần tùy chọn (T01 Optuna, T02 Stacking, X01 Croston SBA, X02 ablation LightGBM): mã nguồn đã có (PR #24);
+  **Validation** của T01, X01, X02 đã chạy (`results/tuning/`, `results/runs/val-20261116T015146Z-2ee03bd`);
+  Stacking chờ dự báo ngoài mẫu của CatBoost; **Test của phần tùy chọn chưa chạy** (cần tag `config-freeze-v2`, chưa tạo).
 - Độ đo theo checklist: **MAE, RMSE, RMSSE, R²**, kèm thời gian chạy.
   Phạm vi này được phân biệt với WRMSSE của cuộc thi M5 gốc.
 
@@ -27,8 +29,10 @@ theo ngày cho từng sản phẩm tại từng cửa hàng trong **28 ngày ti�
 | XGBoost | 0,768 | 0,987 | 15,7 |
 | CatBoost | 0,768 | 0,984 | 2080,3 |
 
-Thời gian: mô hình cục bộ là tổng fit+predict từng chuỗi, mô hình global là fit toàn mẫu (Kaggle CPU 4 lõi),
-không so trực tiếp. Chênh lệch giữa nhóm đầu rất nhỏ và chỉ dựa trên một cửa sổ 28 ngày.
+Thời gian: mô hình cục bộ là tổng thời gian huấn luyện và dự báo của từng chuỗi (3 tiến trình), mô hình toàn cục là thời gian
+huấn luyện và dự báo trên toàn mẫu (CPU 4 lõi trên Kaggle), không so trực tiếp. Chênh lệch giữa nhóm đầu rất nhỏ và chỉ dựa
+trên một cửa sổ 28 ngày. Về chi phí chạy, Croston đạt RMSSE trung bình 0,764 trong khoảng 1,4 giây, gần bằng ETS (0,752)
+nhưng nhanh hơn khoảng 750 lần (1.026,2 giây so với 1,4 giây); với hàng bán không đều, đây là lựa chọn nên thử trước các mô hình cây.
 
 - Báo cáo: [`report/draft_report.md`](report/draft_report.md); slide: `report/slides/m5_nhom6.pptx`; hỏi đáp: `report/qa.md`.
 - Dự báo và metrics theo `run_id`: `results/runs/`; bảng/hình: `results/tables/{validation,test}/`, `results/figures/`.
@@ -42,25 +46,31 @@ không so trực tiếp. Chênh lệch giữa nhóm đầu rất nhỏ và chỉ
 .
 ├── configs/
 │   ├── data.yaml       # Tên file, đường dẫn và khoảng Train/Validation/Test
-│   ├── sample.yaml     # Mẫu tạm 1.200 chuỗi, chưa chốt C05
+│   ├── sample.yaml     # Mẫu 1.200 chuỗi, seed 42 (đã khóa, xem configs/freeze.yaml)
 │   ├── features.yaml   # Đặc trưng lõi, lùi ít nhất 28 ngày
-│   └── models/         # Cấu hình các mô hình
+│   ├── freeze.yaml     # Cấu hình đã khóa trước khi mở nhãn Test (tag config-freeze)
+│   └── models/         # Cấu hình các mô hình (kể cả lightgbm_tuned.json từ Optuna)
 ├── data/
 │   ├── raw/            # Dữ liệu gốc, không đưa lên Git
-│   └── processed/      # Dữ liệu Parquet, không đưa lên Git
-├── notebooks/          # Notebook Colab/Kaggle và EDA
+│   ├── processed/      # Dữ liệu Parquet, không đưa lên Git
+│   └── sample_series_ids.csv  # Danh sách 1.200 chuỗi của mẫu chính thức
+├── notebooks/          # Notebook Colab/Kaggle: 02/03 (lõi), 04/05 (tùy chọn), EDA
 ├── paper/              # Tóm tắt bài báo: summary.md (S04)
 ├── report/
+│   ├── draft_report.md # Bản thảo báo cáo
+│   ├── qa.md           # Hỏi đáp bảo vệ
+│   ├── slides/         # Bộ slide (m5_nhom6.pptx)
 │   ├── figures/        # Hình cho phần phương pháp
 │   └── handoff/        # Giải thích kết quả của từng chủ mô hình
 ├── results/
+│   ├── runs/           # Dự báo và chỉ số theo run_id
+│   ├── tuning/         # Optuna (T01): trials, best_params, tuning_summary
 │   ├── figures/        # Hình phân tích kết quả
 │   └── tables/         # Bảng độ đo và thời gian chạy
+├── scripts/            # run_experiment, collect_runs, analyze_results, build_report, build_slides, tune_lightgbm, backtest_oof, run_stacking
 ├── src/
-│   └── m5/
-│       └── data.py     # Bộ đọc 5 file gốc dùng chung (S05)
-├── tests/
-│   └── test_data.py    # Kiểm tra bộ đọc và tính nhất quán của cấu hình
+│   └── m5/             # data, panel, features, metrics, univariate, global_models, optional, evaluate, schema
+├── tests/              # Kiểm thử đơn vị (metrics, chống rò rỉ, mô hình, phần tùy chọn)
 ├── .gitignore
 └── requirements.txt
 ```
@@ -112,8 +122,7 @@ và đặt các file gốc vào `data/raw/`. Giữ nguyên tên file tải về.
 ## Bàn giao công việc
 
 - **S01:** bộ khung repo, README, `.gitignore` và `requirements.txt`.
-- **S03:** đã có ba file YAML. `sample.yaml` vẫn là cấu hình tạm;
-  chỉ chốt cỡ mẫu sau khi có bằng chứng thời gian chạy ở C05.
+- **S03:** đã có ba tệp YAML; cỡ mẫu 1.200 chuỗi đã chốt sau C05 và khóa trong `configs/freeze.yaml`.
 - **S04:** Thanh Tiền đưa bản tóm tắt bài báo vào `paper/summary.md`.
 - **S05:** bộ đọc tại `src/m5/data.py`; kiểm tra trên dữ liệu thật và
   môi trường được giao bằng các ô ở mục 7.2 hoặc 7.3.
@@ -234,8 +243,7 @@ từng chuỗi; file JSON cùng tên `summary` ghi môi trường và ước lư
 1.200 chuỗi. Số đo chỉ gồm gọi hàm dự báo và kiểm tra đầu vào, không gồm
 đọc CSV, lưu file hay toàn bộ pipeline.
 
-Giữ nguyên mẫu tạm 1.200 chuỗi cho đến khi C05 có số đo của ETS/Croston,
-XGBoost/CatBoost, LightGBM và Linear Regression.
+(Lịch sử C04) Sau C05, mẫu 1.200 chuỗi đã được chốt; xem `configs/freeze.yaml`.
 
 ## 9. Pilot thời gian LightGBM (C03)
 
@@ -262,7 +270,7 @@ Hình ở [`results/figures/`](results/figures/c03_lightgbm_colab_20261112T16434
 Thời gian fit + predict trung bình **0,1885 giây/chuỗi**; ngoại suy 1.200 chuỗi
 **226,20 giây**, không gồm I/O, tạo feature, warm-up và ghi file.
 Đây là pilot thời gian, không phải lần chạy Validation M04 hay thời gian đo
-toàn mẫu. Mẫu 1.200 chuỗi vẫn tạm thời; quyết định C05 cần số đo của mọi mô hình.
+toàn mẫu. (Lịch sử C03) Mẫu 1.200 chuỗi sau đó đã được chốt ở C05.
 
 Kiểm thử: `python -m unittest discover -s tests -v`.
 Các kiểm thử dùng CSV giả chỉ kiểm tra mã, không thay kết quả M5 thật.
@@ -305,7 +313,7 @@ không thay thế bằng chứng chạy trên dữ liệu thật ở Colab/Kaggl
 
 ## 11. Pipeline thí nghiệm đầy đủ (7 mô hình lõi)
 
-Môi trường kiểm thử: Python 3.11, cài `pip install -r requirements.txt`
+Môi trường của các lần chạy chính: Python 3.13 (CPU trên Kaggle), cài bằng `pip install -r requirements.txt`
 (trên máy có proxy TLS dùng thêm `--use-feature=truststore`). Phiên bản thực dùng
 của mỗi run được ghi trong `environment.json`.
 
@@ -325,7 +333,8 @@ python scripts/run_experiment.py --split test             # origin d_1913, refit
   CatBoost (`src/m5/global_models.py`) với lag 28/35/42, rolling mean/std 7/28 sau shift 28, lịch,
   SNAP theo bang, giá tuần (giữ NaN + `price_missing`); `item_id` không dùng làm biến phân loại.
 - Tham số "Default" là mặc định thư viện; chỉ đặt seed, số luồng, `enable_categorical`
-  (XGBoost) và `cat_features` (CatBoost). Toàn bộ tham số thực dùng ở `model_parameters.json`.
+  (XGBoost) và `cat_features` (CatBoost). Tham số lưu ở `model_parameters.json`; riêng XGBoost ở các run cũ, giá trị `None` nghĩa là dùng mặc định của thư viện
+  (100 cây, `eta` 0,3, `max_depth` 6); run mới ghi thêm cấu hình thực của booster.
 - Mọi dự báo bị cắt tại 0 đồng loạt (không làm tròn); số dự báo âm trước khi cắt ghi trong
   `timings.json`. Chuỗi lỗi được fallback và ghi ở `diag_fallbacks.csv`, không đổi tên mô hình.
 - Split `test` bị chặn nếu chưa có tag `config-freeze`.
@@ -335,6 +344,18 @@ python scripts/run_experiment.py --split test             # origin d_1913, refit
   [`notebooks/02b_m5_catboost_run.ipynb`](notebooks/02b_m5_catboost_run.ipynb) (CatBoost, chậm trên CPU).
 - Thời gian trong bảng: mô hình cục bộ = tổng fit+predict từng chuỗi (một luồng mỗi chuỗi);
   mô hình global = fit+predict toàn mẫu nhiều luồng; không dùng để so trực tiếp nếu khác phần cứng.
+
+### Phần tùy chọn (T01, T02, X01, X02)
+
+Thứ tự chạy (Validation trước, Test sau và chỉ sau khi có tag `config-freeze-v2`):
+
+1. `notebooks/04_m5_optional_validation.ipynb` (Kaggle): Optuna, Croston SBA, ablation, dự báo ngoài mẫu (OOF) của LR/LightGBM/XGBoost;
+   `04b_m5_optional_catboost_oof.ipynb`: OOF của CatBoost.
+2. Chép `results/tuning/best_params.json` thành `configs/models/lightgbm_tuned.json` (đã có trong kho) trước khi gắn tag.
+3. `python scripts/run_stacking.py --split validation --oof results/oof/*.parquet --lgbm tuned --base-runs <các run Validation>`.
+4. Chỉ khi nhóm chốt cấu hình: tạo tag `config-freeze-v2` (cập nhật `configs/freeze.yaml`), rồi chạy `05_m5_optional_test.ipynb`
+   và `run_stacking.py --split test`. Nhãn Test của 7 mô hình lõi đã mở trước đó nên Test này không còn là dữ liệu giữ lại hoàn toàn.
+
 
 ## Tài nguyên gốc
 

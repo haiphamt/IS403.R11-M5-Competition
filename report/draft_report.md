@@ -14,7 +14,7 @@ Dự báo số lượng bán hỗ trợ doanh nghiệp bán lẻ lập kế ho�
 
 Trong bán lẻ, quyết định bổ sung hàng cần dựa trên nhu cầu tương lai. Dự báo thấp làm tăng nguy cơ thiếu hàng; dự báo cao làm tăng tồn kho. Việc chọn phương pháp dự báo vì vậy phải cân nhắc đồng thời sai số, thời gian tính toán và khả năng giải thích.
 
-Đồ án khảo sát bài toán dự báo số lượng bán theo ngày của từng sản phẩm tại từng cửa hàng trên dữ liệu M5 của Walmart. **Đầu vào** là lịch sử doanh số của chuỗi (sản phẩm–cửa hàng) đến ngày gốc (origin) $T$, cùng các biến bổ trợ: lịch, sự kiện, SNAP theo bang và giá bán theo tuần. **Đầu ra** là vector 28 dự báo điểm không âm $\hat y_{i,T+1},\dots,\hat y_{i,T+28}$ cho mỗi chuỗi $i$.
+Theo thiết lập của cuộc thi M5 Forecasting – Accuracy, bài toán là dự báo số lượng bán theo ngày trong 28 ngày tiếp theo cho từng cặp mặt hàng–cửa hàng của Walmart [1]. **Đầu vào** là lịch sử doanh số của chuỗi (sản phẩm–cửa hàng) đến ngày gốc (origin) $T$, cùng các biến bổ trợ: lịch, sự kiện, SNAP theo bang và giá bán theo tuần. **Đầu ra** là vector 28 dự báo điểm không âm $\hat y_{i,T+1},\dots,\hat y_{i,T+28}$ cho mỗi chuỗi $i$.
 
 Bài toán có ba thách thức. (i) *Nhu cầu gián đoạn*: trong mẫu của nhóm 70,1% số ngày bán bằng 0 (toàn bộ 30.490 chuỗi: 68,4%), khiến các độ đo tỷ lệ phần trăm không dùng được và nhiều giả định của mô hình thống kê khó thỏa. (ii) *Mùa vụ tuần và khác biệt nhóm hàng*: chỉ số doanh số cuối tuần (thứ Bảy, Chủ nhật) cao hơn khoảng 20% so với trung bình tuần, còn các ngày giữa tuần thấp hơn khoảng 12% (Bảng D07, `results/tables/d07_eda_weekday.csv`). (iii) *Rò rỉ thông tin*: đặc trưng trễ và thống kê trượt phải được dựng đúng theo thời điểm thông tin sẵn có với horizon 28 ngày.
 

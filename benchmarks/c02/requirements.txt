@@ -1,0 +1,13 @@
+# Phiên bản tối thiểu cho mã C02; không phải phiên bản đã cài trên Kaggle.
+# Sau lần chạy thật, dùng requirements_observed.txt để biết đúng các phiên bản.
+numpy>=1.24
+pandas>=2.0
+scikit-learn>=1.2
+xgboost>=2.0
+catboost>=1.2
+psutil>=5.9
+
+# Kiểm tra notebook và xuất HTML, thực hiện ngoài khoảng thời gian đo.
+nbformat>=5.9
+nbconvert>=7.0
+ipykernel>=6.0

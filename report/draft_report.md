@@ -97,7 +97,7 @@ Mọi dự báo được cắt $\max(\hat y,0)$ (doanh số không âm), không 
 
 ### 3.10. Tối ưu và kết hợp dự báo
 
-Bốn phần tùy chọn có mã nguồn và kiểm thử (PR #24). **Đã chạy trên Validation:** Optuna cho LightGBM (30 lượt, chỉ dùng nhãn Validation; Tuned đạt macro-RMSSE 0,7447 so với 0,7496 của Default, nên được chọn), Croston SBA (0,7425 so với 0,7447 của Croston cổ điển) và ablation LightGBM bỏ nhóm giá/sự kiện (0,7479). Chênh lệch giữa Tuned và Default được đo trên đúng cửa sổ dùng để chọn nên hơi lạc quan; Test mới là phép kiểm độc lập. **Chưa có kết quả:** stacking Ridge (chờ dự báo ngoài mẫu của CatBoost) và **toàn bộ phần Test của các mô hình tùy chọn** (cần tag `config-freeze-v2`, chưa tạo vì chờ các thành viên review). Vì nhãn Test của 7 mô hình lõi đã được mở trước đó, Test của phần tùy chọn sẽ không còn là dữ liệu giữ lại hoàn toàn. Bảng dưới đặt các mô hình tùy chọn cạnh bản tham chiếu lõi trên Validation (macro trên 1.200 chuỗi); các bảng 4.x còn lại chỉ gồm 7 mô hình lõi.
+Bốn phần tùy chọn có mã nguồn và kiểm thử (PR #24). **Đã chạy trên Validation:** Optuna cho LightGBM (30 lượt, chỉ dùng nhãn Validation; Tuned đạt macro-RMSSE 0,7447 so với 0,7496 của Default, nên được chọn), Croston SBA (0,7425 so với 0,7447 của Croston cổ điển) và ablation LightGBM bỏ nhóm giá/sự kiện (0,7479). Chênh lệch giữa Tuned và Default được đo trên đúng cửa sổ dùng để chọn nên hơi lạc quan; Test mới là phép kiểm độc lập. Stacking Ridge (T02) khớp bộ gộp trên 67.200 dòng dự báo ngoài mẫu (hai mốc backtest 1829 và 1857 trong Train, nhãn tới d_1885; bốn mô hình cơ sở: Linear Regression, LightGBM Tuned, XGBoost, CatBoost), alpha = 1000 chọn bằng leave-one-origin-out và nằm đúng biên trên của lưới 0,1–1000. Trên Validation, stacking đạt macro-RMSSE 0,7519: **không tốt hơn** LightGBM Tuned (0,7447) hay ETS (0,7293), nhưng có RMSE gộp thấp nhất (2,0251 so với 2,0389 của CatBoost, mô hình tốt nhất kế tiếp). Trọng số: Linear Regression 0,378, LightGBM Tuned 0,323, XGBoost 0,195, CatBoost 0,173. Một giả thuyết (chưa kiểm) cho khoảng cách giữa hai thước đo là bộ gộp tối thiểu hóa sai số bình phương gộp nên ưu tiên chuỗi bán nhiều, trong khi macro-RMSSE chuẩn hóa theo từng chuỗi. Chỉ có hai mốc backtest nên trọng số kém ổn định. **Chưa có kết quả:** **toàn bộ phần Test của các mô hình tùy chọn, gồm stacking** (cần tag `config-freeze-v2`, chưa tạo vì chờ các thành viên review). Vì nhãn Test của 7 mô hình lõi đã được mở trước đó, Test của phần tùy chọn sẽ không còn là dữ liệu giữ lại hoàn toàn. Bảng dưới đặt các mô hình tùy chọn cạnh bản tham chiếu lõi trên Validation (macro trên 1.200 chuỗi); các bảng 4.x còn lại chỉ gồm 7 mô hình lõi.
 
 <!-- TABLE:val_optional -->
 | Mô hình | MAE (macro) | RMSE (macro) | RMSSE (macro) | fit+predict (s) | Ghi chú |
@@ -107,9 +107,10 @@ Bốn phần tùy chọn có mã nguồn và kiểm thử (PR #24). **Đã chạ
 | LightGBM bỏ giá/sự kiện | 0,9856 | 1,2822 | 0,7479 | 8,9 | X02 |
 | Croston | 0,9951 | 1,2919 | 0,7447 | 1,4 | tham chiếu lõi |
 | Croston SBA | 0,9817 | 1,2875 | 0,7425 | 0,3 | X01 |
+| Stacking Ridge | 0,9920 | 1,2801 | 0,7519 | 10,7 | T02; thời gian chỉ gồm khớp bộ gộp, không gồm các mô hình cơ sở |
 <!-- /TABLE -->
 
-Thời gian ở bảng trên đến từ các phiên Kaggle khác nhau (run lõi và run tùy chọn chạy ở thời điểm khác nhau, Croston SBA chạy nhanh hơn Croston cổ điển 0,3 giây so với 1,4 giây dù cùng cách tính), nên chỉ đọc theo thứ tự độ lớn và không so trực tiếp giữa các hàng.
+Thời gian ở bảng trên đến từ các phiên Kaggle khác nhau (riêng stacking chạy cục bộ trên Windows và chỉ tính bước khớp bộ gộp gồm cả chọn alpha; run lõi và run tùy chọn chạy ở thời điểm khác nhau, Croston SBA chạy nhanh hơn Croston cổ điển 0,3 giây so với 1,4 giây dù cùng cách tính), nên chỉ đọc theo thứ tự độ lớn và không so trực tiếp giữa các hàng.
 
 ## 4. Thực nghiệm và đánh giá
 
@@ -138,6 +139,7 @@ Với $e_{i,h}=y_{i,T+h}-\hat y_{i,T+h}$ và $H=28$:
 | val-20261115T072831Z-20b22f7 | validation | d_1885 | Seasonal Naive, Linear Regression, ETS, Croston, LightGBM, XGBoost | 20b22f7 | 4 | 3.13.18 |
 | val-20261115T073404Z-20b22f7 | validation | d_1885 | CatBoost | 20b22f7 | 4 | 3.13.18 |
 | val-20261116T015146Z-2ee03bd | validation | d_1885 | croston_sba, lightgbm_noprice, lightgbm_tuned | 2ee03bd | 4 | 3.13.18 |
+| val-20261116T064518Z-c4f7409-stack | validation | d_1885 | stacking | c4f7409 | máy cục bộ | n/a |
 <!-- /TABLE -->
 
 Seed 42, hash manifest mẫu `68d7acc8…` (SHA-256 của danh sách `series_id` đã sắp xếp), trường `git_dirty` của các run lõi bằng `true` chỉ vì thư mục kết quả được tạo trước khi kiểm tra git (không phải mã bị sửa dở), không có chuỗi nào phải fallback sang Seasonal Naive ở cả Validation và Test (`diag_fallbacks.csv` không được tạo). Các phần tùy chọn (Optuna, stacking, SBA, ablation) được mô tả ở mục 3.10; cấu hình lõi ở `configs/freeze.yaml` không đổi.
@@ -375,7 +377,7 @@ Tiêu chí quyết định xếp hạng: macro-RMSSE trung bình theo chuỗi n�
 
 *Hình 6. Sơ đồ minh họa cơ chế cộng cây trên dữ liệu giả; không phải cây học được trên M5.*
 
-**Giới hạn của thực nghiệm.** (i) Một cửa sổ Test 28 ngày, một mẫu 1.200 chuỗi (lệch về phía chuỗi gián đoạn mạnh hơn toàn tập). (ii) Khác biệt input giữa mô hình cục bộ (chỉ lịch sử doanh số) và global (thêm giá/lịch/SNAP/nhóm). (iii) Giả định giá ngày dự báo được biết trước. (iv) Chưa có khoảng tin cậy; các chuỗi không độc lập (cùng cửa hàng, cùng ngày). (v) Runtime local và global khác phạm vi, phần cứng Kaggle không cố định giữa các lần. (vi) Phần tùy chọn mới có kết quả Validation (Optuna, SBA, ablation); stacking và Test của phần tùy chọn chưa chạy, và Test đó sẽ không còn là dữ liệu giữ lại hoàn toàn. (vii) Smoke reproduction chỉ kiểm tra chạy được trên tập nhỏ, không phải tái lập đầy đủ. (viii) Việc kiểm tra bằng AI không thay thế đối chiếu và review của các thành viên. (ix) Trường `git_sha` trong `environment.json` của các run (20b22f7, 4cc19f7, 4994dda) là SHA trước khi lịch sử commit được viết lại sang tiếng Việt và bỏ dòng đồng tác giả; các SHA này không còn trong nhánh chính nhưng chỉ còn thẻ `archive/pre-rewrite-4994dda` trên GitHub (thẻ của 20b22f7 và 4cc19f7 đã gỡ vì lịch sử cũ có dòng đồng tác giả AI); bảng run → SHA cũ → commit tương đương hiện nay (cùng tree hash) ở `results/pre_rewrite_sha_map.csv`, và `src/` cùng `scripts/run_experiment.py` của cả ba SHA đã được kiểm giống hệt thẻ `config-freeze` bằng `git diff` trước khi gỡ; cây file giữ nguyên, và mã chạy mô hình của các run giống nhau (khác nhau chỉ ở các commit sau về notebook và công cụ báo cáo).
+**Giới hạn của thực nghiệm.** (i) Một cửa sổ Test 28 ngày, một mẫu 1.200 chuỗi (lệch về phía chuỗi gián đoạn mạnh hơn toàn tập). (ii) Khác biệt input giữa mô hình cục bộ (chỉ lịch sử doanh số) và global (thêm giá/lịch/SNAP/nhóm). (iii) Giả định giá ngày dự báo được biết trước. (iv) Chưa có khoảng tin cậy; các chuỗi không độc lập (cùng cửa hàng, cùng ngày). (v) Runtime local và global khác phạm vi, phần cứng Kaggle không cố định giữa các lần. (vi) Phần tùy chọn mới có kết quả Validation (Optuna, SBA, ablation, stacking); Test của phần tùy chọn chưa chạy, và Test đó sẽ không còn là dữ liệu giữ lại hoàn toàn. (vii) Smoke reproduction chỉ kiểm tra chạy được trên tập nhỏ, không phải tái lập đầy đủ. (viii) Việc kiểm tra bằng AI không thay thế đối chiếu và review của các thành viên. (ix) Trường `git_sha` trong `environment.json` của các run (20b22f7, 4cc19f7, 4994dda) là SHA trước khi lịch sử commit được viết lại sang tiếng Việt và bỏ dòng đồng tác giả; các SHA này không còn trong nhánh chính nhưng chỉ còn thẻ `archive/pre-rewrite-4994dda` trên GitHub (thẻ của 20b22f7 và 4cc19f7 đã gỡ vì lịch sử cũ có dòng đồng tác giả AI); bảng run → SHA cũ → commit tương đương hiện nay (cùng tree hash) ở `results/pre_rewrite_sha_map.csv`, và `src/` cùng `scripts/run_experiment.py` của cả ba SHA đã được kiểm giống hệt thẻ `config-freeze` bằng `git diff` trước khi gỡ; cây file giữ nguyên, và mã chạy mô hình của các run giống nhau (khác nhau chỉ ở các commit sau về notebook và công cụ báo cáo).
 
 ## 5. Kết luận và hướng phát triển
 
@@ -383,7 +385,7 @@ Trên mẫu 1.200 chuỗi Walmart M5 với horizon 28 ngày: (Q1) mọi mô hìn
 
 Giới hạn: mẫu và cửa sổ đánh giá đơn, giả định giá tương lai, khác biệt input local/global, chưa đo chi phí tồn kho nên chưa có kết luận về lợi ích kinh doanh hay giảm tồn kho; WRMSSE không được tính.
 
-Hướng phát triển: rolling-origin trên nhiều mùa và khoảng tin cậy phụ thuộc thời gian; mở rộng mẫu và đánh giá phân cấp theo WRMSSE; ablation bỏ giá/sự kiện (X02) và tuning/stacking với temporal out-of-fold; Croston SBA; mô phỏng quyết định tồn kho với chi phí thực; dự báo xác suất. Ưu tiên theo hạn chế quan sát được: rolling-origin và ablation giá trước.
+Hướng phát triển: rolling-origin trên nhiều mùa và khoảng tin cậy phụ thuộc thời gian; mở rộng mẫu và đánh giá phân cấp theo WRMSSE; Test độc lập cho các phần tùy chọn (Tuned, SBA, ablation, stacking) sau khi chốt `config-freeze-v2`, thêm mốc backtest cho stacking; mô phỏng quyết định tồn kho với chi phí thực; dự báo xác suất. Ưu tiên theo hạn chế quan sát được: rolling-origin và ablation giá trước.
 
 ## Tài liệu tham khảo
 

@@ -120,7 +120,7 @@ def main():
           bullets=["Thời gian: local = tổng fit+predict từng chuỗi; global = fit toàn mẫu", "CatBoost mặc định chậm nhất trên CPU 4 lõi"])
     slide("Insight và giới hạn", "Thủy Tiên: kết luận gắn với bảng/hình; nêu giới hạn.",
           ["Một cửa sổ Test 28 ngày; mẫu 1.200 chuỗi", "Khác biệt input giữa local và global gây nhiễu thứ hạng", "Giả định giá tương lai; importance không phải nhân quả",
-           "Phần tùy chọn: mới có Validation (Optuna, SBA, ablation); stacking và Test chưa chạy", "Smoke ≠ tái lập toàn bộ"])
+           "Phần tùy chọn: mới có Validation (Optuna, SBA, ablation, stacking); Test chưa chạy", "Smoke ≠ tái lập toàn bộ"])
     slide("Kết luận và hướng phát triển", "Tuấn Hải (W08/P05).",
           [f"Mô hình tốt nhất trên Test theo macro-RMSSE: {LABEL[best_t]}", "Mọi mô hình cải thiện rõ so với Seasonal Naive (xem bảng)", "Hướng: rolling-origin nhiều mùa, WRMSSE phân cấp, mô phỏng tồn kho, dự báo xác suất"])
     slide("Q&A", "Cả nhóm: xem report/qa.md.", ["Câu hỏi dự kiến: horizon 28, lag ≥ 28, RMSSE vs WRMSSE, R² âm, AICc, Croston z/p, hệ số LR, boosting cộng cây, giá tương lai, local/global"])

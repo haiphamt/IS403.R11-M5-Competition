@@ -134,7 +134,7 @@ def table(name):
         for p in sorted(RUNS.glob("*")):
             e = json.loads((p / "environment.json").read_text())
             rows.append({"run_id": e["run_id"], "split": e["split"], "origin": f"d_{e['origin_day']}", "mô hình": ", ".join(L.get(m, m) for m in e["models"]),
-                         "SHA mã": e["git_sha"][:7], "CPU": e["cpu_count"], "Python": e["python"].split()[0]})
+                         "SHA mã": e["git_sha"][:7], "CPU": e.get("cpu_count", "máy cục bộ"), "Python": e.get("python", "n/a").split()[0]})
         return md(pd.DataFrame(rows))
     raise KeyError(name)
 

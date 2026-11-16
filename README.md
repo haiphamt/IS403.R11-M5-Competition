@@ -13,7 +13,8 @@ theo ngày cho từng sản phẩm tại từng cửa hàng trong **28 ngày ti�
   LightGBM Default, XGBoost và CatBoost.
 - Phần tùy chọn (T01 Optuna, T02 Stacking, X01 Croston SBA, X02 ablation LightGBM): mã nguồn đã có (PR #24);
   **Validation** của T01, X01, X02 đã chạy (`results/tuning/`, `results/runs/val-20261116T015146Z-2ee03bd`);
-  Stacking chờ dự báo ngoài mẫu của CatBoost; **Test của phần tùy chọn chưa chạy** (cần tag `config-freeze-v2`, chưa tạo).
+  Stacking cũng đã chạy trên Validation (macro-RMSSE 0,7519, kém LightGBM Tuned 0,7447 nhưng RMSE gộp thấp nhất; dự báo ngoài mẫu ở `results/oof/`);
+  **Test của phần tùy chọn chưa chạy** (cần tag `config-freeze-v2`, chưa tạo).
 - Độ đo theo checklist: **MAE, RMSE, RMSSE, R²**, kèm thời gian chạy.
   Phạm vi này được phân biệt với WRMSSE của cuộc thi M5 gốc.
 

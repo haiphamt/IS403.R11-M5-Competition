@@ -59,7 +59,7 @@ Khác biệt input là một yếu tố gây nhiễu khi so thứ hạng; pilot 
 
 **13. Stacking có rò rỉ không?**
 Chỉ hợp lệ khi dự báo đưa vào meta là ngoài mẫu của mô hình cơ sở. Không fit meta hay chọn alpha bằng Test;
-score trên chính tập huấn luyện meta không phải đánh giá độc lập. Trạng thái: mã và kiểm thử đã có; kết quả stacking chờ dự báo ngoài mẫu của CatBoost, Test chưa chạy.
+score trên chính tập huấn luyện meta không phải đánh giá độc lập. Trạng thái: mã và kiểm thử đã có; trên Validation stacking đạt macro-RMSSE 0,7519 (kém LightGBM Tuned 0,7447 và ETS 0,7293, nhưng RMSE gộp thấp nhất 2,0251); Test chưa chạy.
 
 **14. Vì sao mô hình thắng/thua?**
 Trên tập kiểm tra, ETS chính xác nhất (RMSSE trung bình 0,752). Croston gần bằng (0,764) nhưng chỉ chạy khoảng 1,4 giây, so với

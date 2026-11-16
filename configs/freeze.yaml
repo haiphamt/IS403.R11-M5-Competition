@@ -38,7 +38,7 @@ seeds: {global_models: 42}
 runtime_reporting: "local models: sum of per-series fit+predict; global models: pooled fit+predict; features/IO/warm-up separate; Kaggle CPU, 4 vCPU"
 optional_decisions:     # trạng thái sau PR #24; v1 ở trên (7 mô hình lõi) không đổi
   T01_optuna_tuned_lightgbm: validation_done   # 30 lượt, chỉ nhãn Validation; best_params ở configs/models/lightgbm_tuned.json, nhật ký ở results/tuning/
-  T02_stacking_ridge: code_ready               # chờ dự báo ngoài mẫu (OOF) của CatBoost; chưa có kết quả
+  T02_stacking_ridge: validation_done          # OOF ở results/oof/ (mốc 1829, 1857); run stacking Validation: val-20261116T064518Z-c4f7409-stack; Test chưa chạy
   X01_croston_sba: validation_done
   X02_lightgbm_without_price_event: validation_done
   validation_run_optional: val-20261116T015146Z-2ee03bd   # croston_sba, lightgbm_noprice, lightgbm_tuned (mã nguồn 2ee03bd)

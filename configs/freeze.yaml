@@ -1,6 +1,10 @@
 # config-freeze v1: everything that must not change after the Test labels are opened.
 version: 1
 code_sha_validation_runs: 20b22f724337698512504b827c2ebeba544da1c0  # mã trước khi viết lại lịch sử, không còn trong Git (báo cáo, giới hạn ix)
+archive_tags:   # thẻ trên GitHub giữ lại commit trước khi viết lại lịch sử; bảng run -> thẻ ở results/pre_rewrite_sha_map.csv
+  - archive/pre-rewrite-20b22f7   # run Validation (7 mô hình lõi)
+  - archive/pre-rewrite-4cc19f7   # run Test, 6 mô hình nhanh
+  - archive/pre-rewrite-4994dda   # run Test, CatBoost
 code_ref_after_rewrite: 9dca59fd979e8bcfdaceec98b1cefe0f9c7c5866    # thẻ config-freeze; src/, configs/, run_experiment.py giống hệt main 7e2543c
 validation_runs:
   - val-20261115T072831Z-20b22f7   # seasonal_naive, linear_regression, ets, croston, lightgbm, xgboost

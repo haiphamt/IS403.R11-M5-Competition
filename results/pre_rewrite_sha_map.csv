@@ -1,0 +1,6 @@
+run_id,sha_in_environment_json,archive_tag,code_equivalent,note
+val-20261115T072831Z-20b22f7,20b22f724337698512504b827c2ebeba544da1c0,archive/pre-rewrite-20b22f7,config-freeze (9dca59f),"src/ và scripts/run_experiment.py giống hệt config-freeze; khác ở configs/*.yaml (mô tả thêm khi khóa) và requirements.txt"
+val-20261115T073404Z-20b22f7,20b22f724337698512504b827c2ebeba544da1c0,archive/pre-rewrite-20b22f7,config-freeze (9dca59f),"CatBoost Validation; cùng commit với dòng trên"
+tes-20261115T090359Z-4cc19f7,4cc19f7a38b9a399aa023a076cc0496f683071be,archive/pre-rewrite-4cc19f7,config-freeze (9dca59f),"src/, scripts/run_experiment.py, requirements.txt, configs/models và configs/data|features.yaml giống hệt config-freeze"
+tes-20261115T095405Z-4994dda,4994ddadbe5964a180b6cf4dac35c6fbd1fc4133,archive/pre-rewrite-4994dda,config-freeze (9dca59f),"CatBoost Test; cùng phạm vi kiểm tra như dòng trên, giống hệt config-freeze"
+val-20261116T015146Z-2ee03bd,2ee03bd0ab4504ea39017d913bc57a6bf8e58e7f,(không cần: còn trong lịch sử hiện tại),2ee03bd,"phần tùy chọn, chạy sau khi viết lại lịch sử"

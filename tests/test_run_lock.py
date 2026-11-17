@@ -69,6 +69,14 @@ class TestSplitLock(unittest.TestCase):
         msg = self.locked(["--split", "test", "--models", "lightgbm_tuned"], tags=both, contained=both)
         self.assertIn("lightgbm_tuned.json is not part of tag", msg)
 
+    def test_tuned_config_is_checked_only_against_the_second_tag(self):
+        runner = load_runner()
+        in_v2 = {"refs/tags/config-freeze-v2:configs/models/lightgbm_tuned.json"}  # v1 predates the file
+        with mock.patch.object(runner, "git", lambda *a: "" if a[:1] == ("status",) else "sha"),                 mock.patch.object(runner, "git_ok", lambda *a: a[0] == "merge-base" or a[2] in in_v2):
+            self.assertIsNone(runner.freeze_problem("config-freeze", []))
+            self.assertIsNone(runner.freeze_problem("config-freeze-v2", ["lightgbm_tuned"]))
+            self.assertIn("not part of tag", runner.freeze_problem("config-freeze", ["lightgbm_tuned"]))
+
 
 if __name__ == "__main__":
     unittest.main()

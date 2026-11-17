@@ -146,7 +146,7 @@ def main():
     args = ap.parse_args()
 
     if args.split == "test":  # also locks --max-series subsets: no peeking at Test labels before the freeze
-        problem = freeze_problem(FREEZE_TAG, args.models)
+        problem = freeze_problem(FREEZE_TAG, [])  # v1 predates the optional configs: only v2 must contain lightgbm_tuned.json
         if problem is None and set(args.models) & set(OPTIONAL_MODELS):
             problem = freeze_problem(FREEZE_TAG_V2, args.models)
         if problem:

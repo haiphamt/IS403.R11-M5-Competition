@@ -57,7 +57,7 @@ Mẫu hơi lệch về phía chuỗi gián đoạn mạnh hơn (43,3% so với 3
 | Validation | d_1886–d_1913 | Chọn cấu hình |
 | Test | d_1914–d_1941 | Đánh giá cuối, chỉ sau tag `config-freeze` |
 
-Khi dự báo Test, mọi mô hình được fit lại trên d_1–d_1913 theo cùng recipe. `scripts/run_experiment.py --split test` từ chối chạy nếu chưa có tag `config-freeze`.
+Khi dự báo Test, mọi mô hình được fit lại trên d_1–d_1913 theo cùng recipe. `scripts/run_experiment.py --split test` từ chối chạy (kể cả với `--max-series`) nếu tag `config-freeze` chưa có, không nằm trong HEAD, cây làm việc có thay đổi chưa commit ngoài `results/`, hoặc (với mô hình tùy chọn) thiếu tag `config-freeze-v2` / `lightgbm_tuned.json` trong tag đó.
 
 ### 3.2. Đặc trưng và chống rò rỉ
 
@@ -131,7 +131,7 @@ Với $e_{i,h}=y_{i,T+h}-\hat y_{i,T+h}$ và $H=28$:
 
 **Môi trường.** Mọi run chính chạy trên Kaggle (CPU 4 lõi, Python 3.13), mã lấy từ nhánh `m5-end-to-end`; các phiên bản thư viện (numpy 2.1.3, pandas 2.3.3, scikit-learn 1.6.1, statsforecast 2.1.1, LightGBM 4.6.0, XGBoost 3.4.1, CatBoost 1.2.10) được ghim trong `requirements.txt` và lưu trong `environment.json` của từng run. Mô hình cục bộ dùng 3 tiến trình song song, mô hình global dùng 4 luồng. Mọi mô hình dùng cùng 1.200 chuỗi, cùng chính sách đặc trưng, cắt dự báo âm về 0 và cùng bộ đo (mục 4.1). Danh sách run:
 
-<!-- TABLE:val_runs -->
+<!-- TABLE:runs -->
 | run_id | split | origin | mô hình | SHA mã | CPU | Python |
 |---|---|---|---|---|---|---|
 | tes-20261115T090359Z-4cc19f7 | test | d_1913 | Seasonal Naive, Linear Regression, ETS, Croston, LightGBM, XGBoost | 4cc19f7 | 4 | 3.13.18 |
@@ -142,7 +142,7 @@ Với $e_{i,h}=y_{i,T+h}-\hat y_{i,T+h}$ và $H=28$:
 | val-20261116T064518Z-c4f7409-stack | validation | d_1885 | stacking | c4f7409 | máy cục bộ | n/a |
 <!-- /TABLE -->
 
-Seed 42, hash manifest mẫu `68d7acc8…` (SHA-256 của danh sách `series_id` đã sắp xếp), trường `git_dirty` của các run lõi bằng `true` chỉ vì thư mục kết quả được tạo trước khi kiểm tra git (không phải mã bị sửa dở), không có chuỗi nào phải fallback sang Seasonal Naive ở cả Validation và Test (`diag_fallbacks.csv` không được tạo). Các phần tùy chọn (Optuna, stacking, SBA, ablation) được mô tả ở mục 3.10; cấu hình lõi ở `configs/freeze.yaml` không đổi.
+Hai run Validation (`…072831Z`, `…073404Z`) cùng SHA mã và cùng cấu hình; CatBoost tách riêng vì chậm. Hai run Test (`4cc19f7`, `4994dda`) có `src/` và `scripts/run_experiment.py` giống hệt thẻ `config-freeze` (`results/pre_rewrite_sha_map.csv`). Trường `data_sha256` của bốn run lõi và run tùy chọn đầu tiên **rỗng**: mã lúc đó chỉ băm `data/raw` hoặc `--data-dir` còn Kaggle đọc `/kaggle/input`, nên bản thân các run không chứng minh đã dùng đúng bộ CSV gốc. Bằng chứng thay thế (yếu hơn) là số Validation/Test tính lại độc lập từ dữ liệu cục bộ khớp bảng (lệch tối đa 5e-5), tức nhãn khớp; giá và lịch không được kiểm theo cách này. Mã đã sửa để các run sau băm cả năm CSV tại thư mục thực sự đọc. Seed 42, hash manifest mẫu `68d7acc8…` (SHA-256 của danh sách `series_id` đã sắp xếp), trường `git_dirty` của các run lõi bằng `true` chỉ vì thư mục kết quả được tạo trước khi kiểm tra git (không phải mã bị sửa dở), không có chuỗi nào phải fallback sang Seasonal Naive ở cả Validation và Test (`diag_fallbacks.csv` không được tạo). Các phần tùy chọn (Optuna, stacking, SBA, ablation) được mô tả ở mục 3.10; cấu hình lõi ở `configs/freeze.yaml` không đổi.
 
 **Kết quả Validation (d_1886–d_1913, 28 ngày; chọn cấu hình, không tuning).**
 
@@ -151,13 +151,13 @@ Seed 42, hash manifest mẫu `68d7acc8…` (SHA-256 của danh sách `series_id`
 <!-- TABLE:val_overall -->
 | Mô hình | MAE (macro) | RMSE (macro) | RMSSE (macro) | R² (macro) | So Seasonal Naive (MAE) | So Seasonal Naive (RMSSE) | fit+predict (s) |
 |---|---|---|---|---|---|---|---|
-| Seasonal Naive | 1,162 | 1,664 | 0,978 | -1,656 | +0,0% | +0,0% | 0,0 |
-| Linear Regression | 0,979 | 1,293 | 0,759 | -0,278 | -15,8% | -22,4% | 24,4 |
-| ETS | 0,966 | 1,273 | 0,729 | -0,157 | -16,9% | -25,4% | 1018,3 |
-| Croston | 0,995 | 1,292 | 0,745 | -0,246 | -14,4% | -23,8% | 1,4 |
-| LightGBM | 0,988 | 1,280 | 0,750 | -0,247 | -15,0% | -23,3% | 10,4 |
-| XGBoost | 0,990 | 1,286 | 0,750 | -0,255 | -14,8% | -23,3% | 15,6 |
-| CatBoost | 1,005 | 1,285 | 0,763 | -0,317 | -13,5% | -22,0% | 2092,1 |
+| Seasonal Naive | 1,162 | 1,664 | 0,978 | −1,656 | +0,0% | +0,0% | 0,0 |
+| Linear Regression | 0,979 | 1,293 | 0,759 | −0,278 | −15,8% | −22,4% | 24,4 |
+| ETS | 0,966 | 1,273 | 0,729 | −0,157 | −16,9% | −25,4% | 1018,3 |
+| Croston | 0,995 | 1,292 | 0,745 | −0,246 | −14,4% | −23,8% | 1,4 |
+| LightGBM | 0,988 | 1,280 | 0,750 | −0,247 | −15,0% | −23,3% | 10,4 |
+| XGBoost | 0,990 | 1,286 | 0,750 | −0,255 | −14,8% | −23,3% | 15,6 |
+| CatBoost | 1,005 | 1,285 | 0,763 | −0,317 | −13,5% | −22,0% | 2092,1 |
 <!-- /TABLE -->
 
 **Kết quả Test (d_1914–d_1941, 28 ngày; refit d_1–d_1913; chạy một lần sau tag `config-freeze`).**
@@ -167,13 +167,13 @@ Seed 42, hash manifest mẫu `68d7acc8…` (SHA-256 của danh sách `series_id`
 <!-- TABLE:test_overall -->
 | Mô hình | MAE (macro) | RMSE (macro) | RMSSE (macro) | R² (macro) | So Seasonal Naive (MAE) | So Seasonal Naive (RMSSE) | fit+predict (s) |
 |---|---|---|---|---|---|---|---|
-| Seasonal Naive | 1,157 | 1,645 | 0,997 | -1,501 | +0,0% | +0,0% | 0,0 |
-| Linear Regression | 0,980 | 1,272 | 0,776 | -0,218 | -15,3% | -22,2% | 25,2 |
-| ETS | 0,953 | 1,241 | 0,752 | -0,130 | -17,6% | -24,6% | 1026,2 |
-| Croston | 0,986 | 1,267 | 0,764 | -0,164 | -14,8% | -23,4% | 1,4 |
-| LightGBM | 0,984 | 1,262 | 0,768 | -0,182 | -14,9% | -23,0% | 9,7 |
-| XGBoost | 0,987 | 1,267 | 0,768 | -0,181 | -14,7% | -22,9% | 15,7 |
-| CatBoost | 0,984 | 1,260 | 0,768 | -0,189 | -15,0% | -23,0% | 2080,3 |
+| Seasonal Naive | 1,157 | 1,645 | 0,997 | −1,501 | +0,0% | +0,0% | 0,0 |
+| Linear Regression | 0,980 | 1,272 | 0,776 | −0,218 | −15,3% | −22,2% | 25,2 |
+| ETS | 0,953 | 1,241 | 0,752 | −0,130 | −17,6% | −24,6% | 1026,2 |
+| Croston | 0,986 | 1,267 | 0,764 | −0,164 | −14,8% | −23,4% | 1,4 |
+| LightGBM | 0,984 | 1,262 | 0,768 | −0,182 | −14,9% | −23,0% | 9,7 |
+| XGBoost | 0,987 | 1,267 | 0,768 | −0,181 | −14,7% | −22,9% | 15,7 |
+| CatBoost | 0,984 | 1,260 | 0,768 | −0,189 | −15,0% | −23,0% | 2080,3 |
 <!-- /TABLE -->
 
 *Bảng 4. Macro so với gộp (pooled), số chuỗi không xác định và dự báo âm. Test.*
@@ -204,9 +204,44 @@ Seed 42, hash manifest mẫu `68d7acc8…` (SHA-256 của danh sách `series_id`
 
 **Trả lời Q1 — so với Seasonal Naive.** Cả sáu mô hình còn lại giảm macro-RMSSE khoảng 22–25% so với Seasonal Naive trên Test (Bảng 3) và Validation (Bảng 2); Seasonal Naive có RMSSE gần 1, tức không tốt hơn dự báo naïve một bước trên lịch sử. Tỷ lệ chuỗi mà mô hình có MAE thấp hơn Seasonal Naive chỉ khoảng 58–62% (Bảng 6), nghĩa là cải thiện đến từ sai số trung bình giảm rõ hơn là từ việc thắng trên mọi chuỗi. R² macro đều âm (−0,13 đến −0,22 trên Test; Seasonal Naive −1,50): với chuỗi thưa, 28 ngày đánh giá có phương sai nhỏ nên mọi mô hình đều kém mốc trung bình của nhãn; 37 chuỗi Test (57 trên Validation) có nhãn hằng nên R² không xác định và bị loại khỏi trung bình.
 
-**Thứ hạng và độ chắc chắn.** Theo macro-RMSSE, ETS đứng đầu ở cả Validation (0,729) và Test (0,752), Croston thứ hai ở cả hai (0,745; 0,764) và Seasonal Naive cuối cùng. Giữa hai đầu mút này, Linear Regression, LightGBM, XGBoost và CatBoost đổi thứ tự giữa hai cửa sổ: ở Validation CatBoost (0,763) và Linear Regression (0,759) kém LightGBM/XGBoost (0,750), còn ở Test CatBoost (0,768) ngang LightGBM (0,768) và XGBoost (0,768), và Linear Regression (0,776) thấp nhất trong nhóm. Khoảng cách trong nhóm ETS–Croston–boosting rất nhỏ (không quá 0,02 RMSSE ở Test) và chỉ dựa trên một cửa sổ 28 ngày, nên nhóm không khẳng định thứ hạng chi tiết giữa chúng là bền vững; kết luận đủ vững chỉ là ETS/Croston/boosting tốt hơn rõ rệt so với Seasonal Naive, và ETS nhỉnh hơn nhất quán ở cả hai cửa sổ.
+**Thứ hạng và độ chắc chắn.** Theo macro-RMSSE, ETS đứng đầu ở cả Validation (0,729) và Test (0,752), Croston thứ hai về điểm ước lượng ở cả hai (0,745; 0,764; chênh lệch so với LightGBM không có ý nghĩa, xem khoảng tin cậy bootstrap bên dưới) và Seasonal Naive cuối cùng. Giữa hai đầu mút này, Linear Regression, LightGBM, XGBoost và CatBoost đổi thứ tự giữa hai cửa sổ: ở Validation CatBoost (0,763) và Linear Regression (0,759) kém LightGBM/XGBoost (0,750), còn ở Test CatBoost (0,768) ngang LightGBM (0,768) và XGBoost (0,768), và Linear Regression (0,776) thấp nhất trong nhóm. Khoảng cách trong nhóm ETS–Croston–boosting rất nhỏ (không quá 0,02 RMSSE ở Test) và chỉ dựa trên một cửa sổ 28 ngày, nên nhóm không khẳng định thứ hạng chi tiết giữa chúng là bền vững; kết luận đủ vững chỉ là ETS/Croston/boosting tốt hơn rõ rệt so với Seasonal Naive, và ETS nhỉnh hơn nhất quán ở cả hai cửa sổ.
 
 Tiêu chí quyết định xếp hạng: macro-RMSSE trung bình theo chuỗi nên chủ yếu phản ánh các chuỗi doanh số thấp. RMSE *gộp* (nhạy với các chuỗi doanh số lớn) không cho thứ hạng ổn định: ở Validation ETS có RMSE gộp cao nhất (2,169) trong khi CatBoost (2,039) và LightGBM (2,059) thấp hơn, còn ở Test ETS lại thấp nhất (1,913; CatBoost 1,929, LightGBM 1,939, Croston 1,949, Linear Regression 1,961, XGBoost 1,964; Bảng 4). Vì vậy nhóm không kết luận rằng mô hình global vượt ETS trên các chuỗi lớn; sự đảo chiều giữa hai cửa sổ cho thấy các chênh lệch này nằm trong biến động của một cửa sổ 28 ngày.
+
+**Khoảng tin cậy bootstrap theo chuỗi.** Để tránh chỉ dựa vào điểm ước lượng, nhóm lấy lại mẫu 1.200 chuỗi có hoàn lại 2.000 lần (seed 42; `scripts/bootstrap_ci.py`) và tính lại macro-RMSSE. Khoảng chỉ phản ánh biến thiên giữa các chuỗi trong *một* cửa sổ 28 ngày; các chuỗi cùng cửa hàng hoặc cùng ngày không độc lập nên khoảng thực tế rộng hơn. Các khoảng riêng lẻ chồng lên nhau nhiều, nhưng chênh lệch *cặp* (cùng chuỗi, cùng lần lấy mẫu) hẹp hơn:
+
+*Bảng 3b. Test: macro-RMSSE, khoảng tin cậy 95% bootstrap và chênh lệch cặp so với ETS (dương = kém ETS). Nguồn: `results/tables/test/test_bootstrap_ci.csv`; Validation: `validation_bootstrap_ci.csv`.*
+
+<!-- TABLE:test_bootstrap -->
+| Mô hình | RMSSE (macro) | KTC 95% | Chênh so với ETS | KTC 95% của chênh lệch |
+|---|---|---|---|---|
+| Seasonal Naive | 0,997 | [0,971; 1,023] | +0,2449 | [+0,2294; +0,2619] |
+| Linear Regression | 0,776 | [0,758; 0,793] | +0,0240 | [+0,0196; +0,0288] |
+| ETS | 0,752 | [0,733; 0,770] | — | — |
+| Croston | 0,764 | [0,745; 0,781] | +0,0115 | [+0,0073; +0,0160] |
+| LightGBM | 0,768 | [0,750; 0,785] | +0,0160 | [+0,0116; +0,0206] |
+| XGBoost | 0,768 | [0,750; 0,785] | +0,0162 | [+0,0117; +0,0210] |
+| CatBoost | 0,768 | [0,750; 0,785] | +0,0157 | [+0,0114; +0,0202] |
+<!-- /TABLE -->
+
+*Bảng 3c. Chênh lệch cặp giữa các mô hình gần nhau (âm = mô hình thứ nhất tốt hơn). Nguồn: `*_bootstrap_pairs.csv`.*
+
+<!-- TABLE:bootstrap_pairs -->
+| Tập | Cặp (thứ nhất − thứ hai) | Chênh | KTC 95% | Khoảng chứa 0 |
+|---|---|---|---|---|
+| Validation | Croston − LightGBM | −0,0049 | [−0,0117; +0,0020] | có |
+| Validation | Croston − Linear Regression | −0,0139 | [−0,0211; −0,0067] | không |
+| Validation | LightGBM − XGBoost | −0,0004 | [−0,0029; +0,0022] | có |
+| Validation | LightGBM − CatBoost | −0,0135 | [−0,0163; −0,0108] | không |
+| Validation | XGBoost − CatBoost | −0,0131 | [−0,0160; −0,0101] | không |
+| Test | Croston − LightGBM | −0,0045 | [−0,0096; +0,0005] | có |
+| Test | Croston − Linear Regression | −0,0124 | [−0,0177; −0,0069] | không |
+| Test | LightGBM − XGBoost | −0,0002 | [−0,0020; +0,0016] | có |
+| Test | LightGBM − CatBoost | +0,0003 | [−0,0015; +0,0020] | có |
+| Test | XGBoost − CatBoost | +0,0005 | [−0,0014; +0,0024] | có |
+<!-- /TABLE -->
+
+ETS thấp hơn mọi mô hình khác với khoảng tin cậy chênh lệch không chứa 0 ở cả Validation và Test (Test: Croston +0,0115, ba mô hình cây khoảng +0,016, Linear Regression +0,024), nên "ETS nhỉnh hơn" có cơ sở ở mức mẫu chuỗi này, dù độ lớn nhỏ. Giữa các mô hình còn lại: Croston không khác LightGBM có ý nghĩa (khoảng chứa 0 ở cả hai tập), nên thứ hai của Croston chỉ là điểm ước lượng; LightGBM và XGBoost không phân biệt được; CatBoost kém LightGBM và XGBoost rõ ở Validation (khoảng cách 0,013) nhưng ba mô hình cây không phân biệt được ở Test. Vì vậy thứ hạng trong nhóm boosting không bền vững giữa hai cửa sổ.
 
 **Trả lời Q2 — theo nhóm nhu cầu, ngành hàng và bang.**
 
@@ -242,6 +277,18 @@ Tiêu chí quyết định xếp hạng: macro-RMSSE trung bình theo chuỗi n�
 
 Ở nhóm chuỗi ít số 0 (≤ 0,5), các mô hình sát nhau (0,686–0,711 trên Test): ETS dẫn nhẹ, Croston kém nhất nhóm vì dự báo phẳng không bắt chu kỳ tuần. Ở nhóm gián đoạn mạnh (> 0,8), ETS và Croston (0,780 và 0,785) tốt hơn rõ LightGBM, XGBoost, CatBoost và Linear Regression (0,804–0,814): khoảng cách tăng theo mức gián đoạn. Theo ngành hàng, HOBBIES có sai số chuẩn hóa thấp nhất và FOODS cao nhất ở hầu hết mô hình; theo bang, TX thấp nhất. Các khác biệt giữa nhóm là mô tả, không nên diễn giải nhân quả.
 
+*Độ bền của phân nhóm.* Nhóm nhu cầu được cố định từ tỷ lệ ngày 0 trên toàn bộ d_1–d_1885 (không đổi sau khi Test mở, và là nhóm của mọi bảng "theo nhóm nhu cầu"), nên tính cả các ngày 0 *trước lần bán đầu tiên*: 944/1.200 chuỗi có đoạn 0 đầu (trung vị 441 ngày) và mọi ô thiếu giá đều là bán 0 (hàng chưa niêm yết). Tính lại chỉ sau lần bán đầu tiên (cùng quy ước bỏ số 0 đầu của RMSSE), tỷ lệ 0 trung bình là 0,625 thay vì 0,701, 252 chuỗi (21%) đổi nhóm và nhóm > 0,8 giảm từ 520 xuống 355 chuỗi (165 chuỗi chuyển sang nhóm thấp hơn): phân nhóm hiện tại thổi phồng mức gián đoạn. Bảng 5d giữ nhóm đã khóa nhưng cho thấy kết luận theo nhóm không đổi: ở nhóm > 0,8 ETS (0,796) và Croston (0,797) vẫn tốt hơn các mô hình cây (0,824–0,828), khoảng cách còn lớn hơn (khoảng 0,03 so với 0,025). Nguồn: `scripts/robustness_classes.py`, `results/tables/test/test_by_demand_class_after_first_sale.csv`.
+
+*Bảng 5d. RMSSE macro theo nhóm tính sau lần bán đầu tiên (Test; kiểm tra độ bền, không thay nhóm đã khóa).*
+
+<!-- TABLE:test_class_after_first_sale -->
+| Nhóm (sau lần bán đầu tiên) | Số chuỗi | Seasonal Naive | Linear Regression | ETS | Croston | LightGBM | XGBoost | CatBoost |
+|---|---|---|---|---|---|---|---|---|
+| high_zero(>0.8) | 355 | 1,068 | 0,841 | 0,796 | 0,797 | 0,828 | 0,824 | 0,827 |
+| low_zero(<=0.5) | 340 | 0,928 | 0,714 | 0,704 | 0,724 | 0,709 | 0,712 | 0,708 |
+| mid_zero(0.5-0.8] | 505 | 0,994 | 0,772 | 0,753 | 0,767 | 0,765 | 0,767 | 0,767 |
+<!-- /TABLE -->
+
 *Hình 1. RMSSE theo nhóm nhu cầu (Test), `results/figures/test/test_rmsse_by_demand_class.png`.*
 
 ![RMSSE theo nhóm nhu cầu](../results/figures/test/test_rmsse_by_demand_class.png)
@@ -251,12 +298,12 @@ Tiêu chí quyết định xếp hạng: macro-RMSSE trung bình theo chuỗi n�
 <!-- TABLE:test_winrate -->
 | Mô hình | win_rate_vs_snaive | tie_rate | median_mae_diff |
 |---|---|---|---|
-| Linear Regression | 0,586 | 0,000 | -0,056 |
-| ETS | 0,621 | 0,005 | -0,075 |
-| Croston | 0,605 | 0,007 | -0,067 |
-| LightGBM | 0,580 | 0,000 | -0,050 |
-| XGBoost | 0,585 | 0,000 | -0,050 |
-| CatBoost | 0,578 | 0,000 | -0,047 |
+| Linear Regression | 0,586 | 0,000 | −0,056 |
+| ETS | 0,621 | 0,005 | −0,075 |
+| Croston | 0,605 | 0,007 | −0,067 |
+| LightGBM | 0,580 | 0,000 | −0,050 |
+| XGBoost | 0,585 | 0,000 | −0,050 |
+| CatBoost | 0,578 | 0,000 | −0,047 |
 <!-- /TABLE -->
 
 **Theo thứ trong tuần và horizon.** Tất cả mô hình sai nhiều hơn vào Thứ Bảy và Chủ nhật (ngày bán cao nên sai số tuyệt đối lớn), và Seasonal Naive sai nhiều nhất. Sai số tăng theo horizon (Bảng 8); ETS có MAE thấp nhất ở hầu hết các horizon được liệt kê, nhưng không phải mọi horizon (ở horizon 14 các mô hình global và Linear Regression thấp hơn ETS).
@@ -346,16 +393,16 @@ Tiêu chí quyết định xếp hạng: macro-RMSSE trung bình theo chuỗi n�
 | Biến | Hệ số |
 |---|---|
 | num__rolling_mean_28 | 1,1803 |
-| cat__event_name_1_Christmas | -0,8197 |
+| cat__event_name_1_Christmas | −0,8197 |
 | num__rolling_mean_7 | 0,6731 |
 | cat__event_name_1_LaborDay | 0,3483 |
-| cat__wday_5 | -0,2814 |
+| cat__wday_5 | −0,2814 |
 | num__lag_28 | 0,2766 |
-| cat__wday_4 | -0,2732 |
-| cat__wday_6 | -0,2700 |
-| cat__wday_3 | -0,2225 |
+| cat__wday_4 | −0,2732 |
+| cat__wday_6 | −0,2700 |
+| cat__wday_3 | −0,2225 |
 | num__lag_35 | 0,1892 |
-| cat__wday_7 | -0,1747 |
+| cat__wday_7 | −0,1747 |
 | cat__event_name_1_MemorialDay | 0,1718 |
 <!-- /TABLE -->
 
@@ -377,7 +424,7 @@ Tiêu chí quyết định xếp hạng: macro-RMSSE trung bình theo chuỗi n�
 
 *Hình 6. Sơ đồ minh họa cơ chế cộng cây trên dữ liệu giả; không phải cây học được trên M5.*
 
-**Giới hạn của thực nghiệm.** (i) Một cửa sổ Test 28 ngày, một mẫu 1.200 chuỗi (lệch về phía chuỗi gián đoạn mạnh hơn toàn tập). (ii) Khác biệt input giữa mô hình cục bộ (chỉ lịch sử doanh số) và global (thêm giá/lịch/SNAP/nhóm). (iii) Giả định giá ngày dự báo được biết trước. (iv) Chưa có khoảng tin cậy; các chuỗi không độc lập (cùng cửa hàng, cùng ngày). (v) Runtime local và global khác phạm vi, phần cứng Kaggle không cố định giữa các lần. (vi) Phần tùy chọn mới có kết quả Validation (Optuna, SBA, ablation, stacking); Test của phần tùy chọn chưa chạy, và Test đó sẽ không còn là dữ liệu giữ lại hoàn toàn. (vii) Smoke reproduction chỉ kiểm tra chạy được trên tập nhỏ, không phải tái lập đầy đủ. (viii) Việc kiểm tra bằng AI không thay thế đối chiếu và review của các thành viên. (ix) Trường `git_sha` trong `environment.json` của các run (20b22f7, 4cc19f7, 4994dda) là SHA trước khi lịch sử commit được viết lại sang tiếng Việt và bỏ dòng đồng tác giả; các SHA này không còn trong nhánh chính nhưng chỉ còn thẻ `archive/pre-rewrite-4994dda` trên GitHub (thẻ của 20b22f7 và 4cc19f7 đã gỡ vì lịch sử cũ có dòng đồng tác giả AI); bảng run → SHA cũ → commit tương đương hiện nay (cùng tree hash) ở `results/pre_rewrite_sha_map.csv`, và `src/` cùng `scripts/run_experiment.py` của cả ba SHA đã được kiểm giống hệt thẻ `config-freeze` bằng `git diff` trước khi gỡ; cây file giữ nguyên, và mã chạy mô hình của các run giống nhau (khác nhau chỉ ở các commit sau về notebook và công cụ báo cáo). (x) Dự báo XGBoost phụ thuộc phiên bản thư viện: chạy lại ở xgboost 3.2.0 (run Kaggle dùng 3.4.1) cho macro-RMSSE Validation 0,7493 thay vì 0,7500 và dự báo lệch trung bình 0,155 đơn vị; chênh lệch này đủ đảo thứ tự giữa XGBoost và LightGBM (0,7496), nên thứ hạng trong nhóm boosting không bền vững, và tái lập chính xác cần ghim đúng `requirements.txt` (chưa tự chạy được bản 3.4.1 vì cần Python ≥ 3.12; Tiền Lê tái lập khớp bản đã lưu với bản ghim). (xi) LightGBM Tuned được chọn bằng nhãn Validation và stacking dùng nó làm mô hình cơ sở nên thừa hưởng một phần lạc quan này; Test độc lập chưa có.
+**Giới hạn của thực nghiệm.** (i) Một cửa sổ Test 28 ngày, một mẫu 1.200 chuỗi (lệch về phía chuỗi gián đoạn mạnh hơn toàn tập). (ii) Khác biệt input giữa mô hình cục bộ (chỉ lịch sử doanh số) và global (thêm giá/lịch/SNAP/nhóm). (iii) Giả định giá ngày dự báo được biết trước. (iv) Chưa có khoảng tin cậy; các chuỗi không độc lập (cùng cửa hàng, cùng ngày). (v) Runtime local và global khác phạm vi, phần cứng Kaggle không cố định giữa các lần. (vi) Phần tùy chọn mới có kết quả Validation (Optuna, SBA, ablation, stacking); Test của phần tùy chọn chưa chạy, và Test đó sẽ không còn là dữ liệu giữ lại hoàn toàn. (vii) Smoke reproduction chỉ kiểm tra chạy được trên tập nhỏ, không phải tái lập đầy đủ. (viii) Việc kiểm tra bằng AI không thay thế đối chiếu và review của các thành viên. (ix) Trường `git_sha` trong `environment.json` của các run (20b22f7, 4cc19f7, 4994dda) là SHA trước khi lịch sử commit được viết lại sang tiếng Việt và bỏ dòng đồng tác giả; các SHA này không còn trong nhánh chính nhưng chỉ còn thẻ `archive/pre-rewrite-4994dda` trên GitHub (thẻ của 20b22f7 và 4cc19f7 đã gỡ vì lịch sử cũ có dòng đồng tác giả AI); bảng run → SHA cũ → commit tương đương hiện nay (cùng tree hash) ở `results/pre_rewrite_sha_map.csv`, và `src/` cùng `scripts/run_experiment.py` của cả ba SHA đã được kiểm giống hệt thẻ `config-freeze` bằng `git diff` trước khi gỡ; cây file giữ nguyên, và mã chạy mô hình của các run giống nhau (khác nhau chỉ ở các commit sau về notebook và công cụ báo cáo). (x) Dự báo XGBoost phụ thuộc phiên bản thư viện: chạy lại ở xgboost 3.2.0 (run Kaggle dùng 3.4.1) cho macro-RMSSE Validation 0,7493 thay vì 0,7500 và dự báo lệch trung bình 0,155 đơn vị; chênh lệch này đủ đảo thứ tự giữa XGBoost và LightGBM (0,7496), nên thứ hạng trong nhóm boosting không bền vững, và tái lập chính xác cần ghim đúng `requirements.txt` (chưa tự chạy được bản 3.4.1 vì cần Python ≥ 3.12; Tiền Lê tái lập khớp bản đã lưu với bản ghim). (xi) LightGBM Tuned được chọn bằng nhãn Validation (chính cửa sổ dùng để báo điểm) và stacking dùng nó làm mô hình cơ sở nên thừa hưởng sự lạc quan này: điểm Validation của hai mô hình này không so sánh được với 7 mô hình lõi và chỉ Test (chưa chạy) mới là phép kiểm độc lập; chọn tham số bằng backtest bên trong Train là cách tránh vấn đề này nhưng chưa được làm. Bộ gộp stacking chọn α bằng leave-one-origin-out với chỉ hai mốc backtest nên thực chất là kiểm chéo 2 phần, kém tin cậy. (xii) Phân nhóm nhu cầu tính cả ngày 0 trước lần bán đầu tiên (xem độ bền ở Bảng 5d); các khoảng tin cậy bootstrap chỉ phản ánh biến thiên giữa chuỗi trong một cửa sổ.
 
 ## 5. Kết luận và hướng phát triển
 

@@ -345,7 +345,8 @@ python scripts/run_experiment.py --split test             # origin d_1913, refit
   (100 cây, `eta` 0,3, `max_depth` 6); run mới ghi thêm cấu hình thực của booster.
 - Mọi dự báo bị cắt tại 0 đồng loạt (không làm tròn); số dự báo âm trước khi cắt ghi trong
   `timings.json`. Chuỗi lỗi được fallback và ghi ở `diag_fallbacks.csv`, không đổi tên mô hình.
-- Split `test` bị chặn nếu chưa có tag `config-freeze`.
+- Split `test` bị chặn (kể cả khi dùng `--max-series`) nếu tag `config-freeze` chưa có, không nằm trong HEAD hoặc cây làm việc có thay đổi chưa commit ngoài `results/`; mô hình tùy chọn cần thêm tag `config-freeze-v2` chứa `configs/models/lightgbm_tuned.json`. `environment.json` ghi `data_dir` và SHA-256 của năm CSV (các run đầu ghi rỗng, xem báo cáo mục 4.2).
+- Kiểm tra độ chắc chắn: `scripts/bootstrap_ci.py` (khoảng tin cậy bootstrap theo chuỗi) và `scripts/robustness_classes.py` (phân nhóm nhu cầu tính sau lần bán đầu tiên); kết quả ở `results/tables/{validation,test}/`.
 - Resume: chạy lại cùng lệnh với `--run-id <id>`; ETS/Croston lưu checkpoint 50 chuỗi trong `ckpt/`
   (Git bỏ qua `*.pkl`). Chạy trên Kaggle/Colab bằng
   [`notebooks/02_m5_full_run.ipynb`](notebooks/02_m5_full_run.ipynb) (6 mô hình nhanh) và

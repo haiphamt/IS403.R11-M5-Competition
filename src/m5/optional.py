@@ -5,6 +5,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
+from . import metrics
 from .data import load_raw_data
 from .panel import build_panel
 
@@ -19,13 +20,13 @@ def load_sample_panel(data_dir=None, manifest=None, max_series=None):
 
 
 def rmsse_scales(y, origin):
-    """One-step naive MSE on d_1..origin after the first non-zero sale; NaN when undefined (M5 definition, as m5.metrics)."""
+    """RMSSE denominators of d_1..origin per series; NaN when undefined. Uses the same m5.metrics.rmsse_scale as the core evaluator."""
     scales = np.full(len(y), np.nan)
     for i, row in enumerate(np.asarray(y, dtype=float)[:, :origin]):
-        nz = np.flatnonzero(row)
-        if nz.size and row.size - nz[0] > 1:
-            s = np.mean(np.diff(row[nz[0]:]) ** 2)
-            scales[i] = s if s > 0 else np.nan
+        try:
+            scales[i] = metrics.rmsse_scale(row)
+        except ValueError:
+            pass
     return scales
 
 

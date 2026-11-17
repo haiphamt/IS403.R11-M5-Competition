@@ -31,6 +31,14 @@ LABEL = {"seasonal_naive": "Seasonal Naive", "linear_regression": "Linear Regres
          "lightgbm_tuned": "LightGBM Tuned", "stacking": "Stacking"}
 
 
+def win_rates(mae, models, baseline="seasonal_naive"):
+    """Per model: share of series with a lower MAE than the baseline, share of exact ties and the median MAE difference."""
+    return pd.DataFrame({m: {"win_rate_vs_snaive": float((mae[m] < mae[baseline]).mean()),
+                             "tie_rate": float((mae[m] == mae[baseline]).mean()),
+                             "median_mae_diff": float((mae[m] - mae[baseline]).median())}
+                         for m in models if m != baseline}).T
+
+
 def order(models):
     return [m for m in ORDER if m in set(models)] + sorted(set(models) - set(ORDER))
 
@@ -77,7 +85,7 @@ def main():
         pivot.plot.bar(ax=ax, width=0.85)
         ax.set_ylabel("RMSSE trung bình (macro)")
         ax.set_title(f"RMSSE theo {key} — {tag}")
-        ax.legend([LABEL[m] for m in models], fontsize=7, ncol=2)
+        ax.legend([LABEL.get(m, m) for m in models], fontsize=7, ncol=2)
         savefig(fig, a.figures / f"{tag}_rmsse_by_{key}.png")
 
     # 3. weekday and horizon error from predictions joined to labels by key
@@ -88,7 +96,6 @@ def main():
     lab = lab.rename_axis(["series_id", "d"]).reset_index()
     j = pred.merge(lab, on=["series_id", "d"], how="left", validate="many_to_one")
     j["abs_err"] = (j["y_true"] - j["y_pred"]).abs()
-    j["wday"] = j["d"].map(cal["wday"])  # 1 = Saturday in M5 calendar
     j["weekday"] = j["d"].map(pd.to_datetime(cal["date"]).dt.day_name())
     for key, name in (("weekday", "weekday"), ("horizon", "horizon")):
         t = j.groupby([key, "model"])["abs_err"].mean().unstack("model")[models]
@@ -99,7 +106,7 @@ def main():
         t.plot(ax=ax, marker="o" if key == "weekday" else None)
         ax.set_ylabel("MAE gộp (đơn vị/ngày)")
         ax.set_title(f"MAE theo {name} — {tag}")
-        ax.legend([LABEL[m] for m in models], fontsize=7, ncol=2)
+        ax.legend([LABEL.get(m, m) for m in models], fontsize=7, ncol=2)
         savefig(fig, a.figures / f"{tag}_mae_by_{name}.png")
 
     # 4. runtime / accuracy trade-off
@@ -115,7 +122,7 @@ def main():
     fig, ax = plt.subplots(figsize=(6, 4))
     for _, r in rt.iterrows():
         ax.scatter(max(r["fit_predict_s"], 1e-3), r["macro_rmsse"])
-        ax.annotate(LABEL[r["model"]], (max(r["fit_predict_s"], 1e-3), r["macro_rmsse"]), fontsize=7)
+        ax.annotate(LABEL.get(r["model"], r["model"]), (max(r["fit_predict_s"], 1e-3), r["macro_rmsse"]), fontsize=7)
     ax.set_xscale("log")
     ax.set_xlabel("fit+predict (giây, thang log; không cùng phạm vi giữa mô hình cục bộ/global)")
     ax.set_ylabel("RMSSE macro")
@@ -124,23 +131,21 @@ def main():
 
     # 5. win-rate versus Seasonal Naive (per-series MAE; descriptive, series are not independent)
     mae = ps.pivot(index="series_id", columns="model", values="mae")
-    win = pd.DataFrame({m: {"win_rate_vs_snaive": float((mae[m] < mae["seasonal_naive"]).mean()),
-                            "tie_rate": float((mae[m] == mae["seasonal_naive"]).mean()),
-                            "median_mae_diff": float((mae[m] - mae["seasonal_naive"]).median())}
-                        for m in models if m != "seasonal_naive"}).T
+    win = win_rates(mae, models)
     win.round(6).to_csv(a.tables / f"{tag}_win_rate_vs_snaive.csv")
 
     # 6. objective actual-vs-predicted examples: series at the 10th/50th/90th percentile of Train mean sales
     train = actuals[[f"d_{n}" for n in range(1, SPLITS["train"][1] + 1)]].mean(axis=1).sort_values()
-    picks = [train.index[int(q * (len(train) - 1))] for q in (0.1, 0.5, 0.9)]
+    QUANTILES = (0.1, 0.5, 0.9)
+    picks = [train.index[int(q * (len(train) - 1))] for q in QUANTILES]
     fig, axes = plt.subplots(len(picks), 1, figsize=(9, 3 * len(picks)), sharex=True)
-    for ax, sid in zip(axes, picks):
+    for ax, sid, q in zip(axes, picks, QUANTILES):
         sub = j[j["series_id"] == sid]
         ax.plot(sub[sub["model"] == models[0]]["horizon"], sub[sub["model"] == models[0]]["y_true"], "k-o", label="thực tế", ms=3)
         for m in models:
             s = sub[sub["model"] == m]
-            ax.plot(s["horizon"], s["y_pred"], label=LABEL[m], lw=1)
-        ax.set_title(f"{sid} (phân vị Train mean: {list(picks).index(sid) * 0.4 + 0.1:.1f})", fontsize=8)
+            ax.plot(s["horizon"], s["y_pred"], label=LABEL.get(m, m), lw=1)
+        ax.set_title(f"{sid} (phân vị Train mean: {q:.1f})", fontsize=8)
     axes[0].legend(fontsize=6, ncol=4)
     axes[-1].set_xlabel("horizon (ngày)")
     savefig(fig, a.figures / f"{tag}_actual_vs_pred_examples.png")

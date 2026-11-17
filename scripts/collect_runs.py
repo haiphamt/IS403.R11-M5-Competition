@@ -41,6 +41,8 @@ def main():
         run_id = json.loads((r / "environment.json").read_text())["run_id"]
         for model, v in t.items():
             if isinstance(v, dict):
+                if model in timings:
+                    raise ValueError(f"model {model} appears in two runs ({timings[model]['run_id']}, {run_id}); timings would be overwritten")
                 timings[model] = {**v, "run_id": run_id}
     summary["fit_predict_s"] = summary["model"].map(
         lambda m: timings[m].get("fit_predict_sum_s", timings[m].get("fit_s", 0) + timings[m].get("predict_s", 0)))

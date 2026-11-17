@@ -53,7 +53,10 @@ def main():
     oof = pd.concat([pd.read_parquet(f) for f in files], ignore_index=True)
     wide = oof.pivot_table(index=["origin", "series_id", "d_num"], columns="model", values="y_pred").join(
         oof.drop_duplicates(["origin", "series_id", "d_num"]).set_index(["origin", "series_id", "d_num"])["y_true"])
+    n_keys = len(wide)
     wide = wide[[cols[b] for b in BASES] + ["y_true"]].rename(columns={v: k for k, v in cols.items()}).dropna().reset_index()
+    if len(wide) != n_keys:  # a base model missing for some (origin, series, day) would silently shrink the meta training set
+        raise SystemExit(f"{n_keys - len(wide)} OOF rows lack a forecast from at least one base model; refusing to fit on a partial set")
     t0 = time.perf_counter()
     meta, alpha, cv = optional.fit_ridge_meta(wide, BASES)
     meta_s = time.perf_counter() - t0

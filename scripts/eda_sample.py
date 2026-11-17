@@ -67,21 +67,28 @@ def main():
     grp = pd.DataFrame({"cat": meta["cat_id"].to_numpy(), "state": meta["state_id"].to_numpy(),
                         "cls": meta["demand_class"].to_numpy(), "mean_sales": y.mean(axis=1), "zero_ratio": zr})
     for key in ("cat", "state", "cls"):
-        grp.groupby(key)[["mean_sales", "zero_ratio"]].agg(["mean", "count"]).round(4).to_csv(T / f"d07_eda_by_{key}.csv")
+        g = grp.groupby(key)[["mean_sales", "zero_ratio"]].agg(["mean", "count"])
+        g.columns = [f"{a}_{b}" for a, b in g.columns]  # flat header so pd.read_csv reads it back directly
+        g.round(4).to_csv(T / f"d07_eda_by_{key}.csv")
 
-    # SNAP and event days (descriptive, per state; within-series ratio of means)
+    # SNAP and event days (descriptive, per state; ratio of the POOLED means over all series and days of the state, not a within-series ratio)
     rows = []
     for state in sorted(meta["state_id"].unique()):
         m = (meta["state_id"] == state).to_numpy()
-        snap = p.snap[m, :TRAIN][0].astype(bool)
+        flags = p.snap[m, :TRAIN]
+        assert (flags == flags[0]).all(), "SNAP is state-wide: every series of a state must share the same flags"
+        snap = flags[0].astype(bool)
         ys = y[m]
         rows.append({"state": state, "snap_day_mean": ys[:, snap].mean(), "non_snap_mean": ys[:, ~snap].mean()})
     snap_tab = pd.DataFrame(rows)
     snap_tab["ratio"] = snap_tab["snap_day_mean"] / snap_tab["non_snap_mean"]
     snap_tab.round(4).to_csv(T / "d07_eda_snap.csv", index=False)
-    ev = cal["event_name_1"].notna().to_numpy()
-    pd.DataFrame({"event_day_mean": [y[:, ev].mean()], "non_event_mean": [y[:, ~ev].mean()],
-                  "n_event_days": [int(ev.sum())]}).round(4).to_csv(T / "d07_eda_events.csv", index=False)
+    ev = (cal["event_name_1"].notna() | cal["event_name_2"].notna()).to_numpy()  # either event slot
+    dow = pd.to_datetime(cal["date"]).dt.dayofweek.to_numpy()
+    # weekday-adjusted ratio: event vs non-event mean within each weekday, then averaged (events cluster on some weekdays)
+    ratios = [y[:, ev & (dow == w)].mean() / y[:, ~ev & (dow == w)].mean() for w in range(7) if (ev & (dow == w)).any()]
+    pd.DataFrame({"event_day_mean": [y[:, ev].mean()], "non_event_mean": [y[:, ~ev].mean()], "n_event_days": [int(ev.sum())],
+                  "weekday_adjusted_ratio": [float(np.mean(ratios))]}).round(4).to_csv(T / "d07_eda_events.csv", index=False)
 
     # price variation: share of series-days with a missing price (before first listing) and relative price range
     price = p.price[:, :TRAIN]

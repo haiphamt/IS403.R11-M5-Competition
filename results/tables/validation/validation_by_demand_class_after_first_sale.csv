@@ -1,0 +1,4 @@
+demand_class_after_first_sale,n_series,seasonal_naive,linear_regression,ets,croston,lightgbm,xgboost,catboost
+high_zero(>0.8),355,1.044991,0.814556,0.763766,0.764985,0.805387,0.799895,0.83552
+low_zero(<=0.5),340,0.950532,0.725454,0.714115,0.732151,0.720109,0.722514,0.719572
+mid_zero(0.5-0.8],505,0.948775,0.741713,0.715382,0.738912,0.730254,0.733414,0.741454

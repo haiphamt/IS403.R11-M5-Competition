@@ -18,11 +18,17 @@ L = {"seasonal_naive": "Seasonal Naive", "linear_regression": "Linear Regression
 ORDER = list(L)
 
 
+def num(text):
+    """Vietnamese decimal comma and a true minus sign (U+2212), matching the report text."""
+    text = text.replace(".", ",")
+    return "−" + text[1:] if text.startswith("-") else text
+
+
 def md(df, floatfmt="{:.3f}"):
     cols = list(df.columns)
     lines = ["| " + " | ".join(map(str, cols)) + " |", "|" + "|".join(["---"] * len(cols)) + "|"]
     for row in df.itertuples(index=False):
-        lines.append("| " + " | ".join(floatfmt.format(v).replace(".", ",") if isinstance(v, float) else str(v) for v in row) + " |")
+        lines.append("| " + " | ".join(num(floatfmt.format(v)) if isinstance(v, float) else str(v) for v in row) + " |")
     return "\n".join(lines)
 
 
@@ -35,8 +41,8 @@ def overall(split):
     rt = pd.read_csv(T / split / f"{split}_runtime_tradeoff.csv").set_index("model")
     out = pd.DataFrame({"Mô hình": [L[m] for m in d.index], "MAE (macro)": d["macro_mae"].values, "RMSE (macro)": d["macro_rmse"].values,
                         "RMSSE (macro)": d["macro_rmsse"].values, "R² (macro)": d["macro_r2"].values,
-                        "So Seasonal Naive (MAE)": [f"{v:+.1f}%".replace(".", ",") for v in d["mae_vs_snaive_pct"]],
-                        "So Seasonal Naive (RMSSE)": [f"{v:+.1f}%".replace(".", ",") for v in d["rmsse_vs_snaive_pct"]],
+                        "So Seasonal Naive (MAE)": [num(f"{v:+.1f}%") for v in d["mae_vs_snaive_pct"]],
+                        "So Seasonal Naive (RMSSE)": [num(f"{v:+.1f}%") for v in d["rmsse_vs_snaive_pct"]],
                         "fit+predict (s)": [f"{float(rt.loc[m, 'fit_predict_s']):.1f}".replace(".", ",") for m in d.index]})
     return md(out)
 
@@ -66,10 +72,45 @@ def val_optional():
     return md(out, "{:.4f}")
 
 
+def bootstrap(split):
+    d = pd.read_csv(T / split / f"{split}_bootstrap_ci.csv")
+    out = pd.DataFrame({"Mô hình": [L[m] for m in d["model"]], "RMSSE (macro)": d["macro_rmsse"].values,
+                        "KTC 95%": [f"[{num(f'{a:.3f}')}; {num(f'{b:.3f}')}]" for a, b in zip(d["ci_low"], d["ci_high"])],
+                        "Chênh so với ETS": ["—" if m == "ets" else num(f"{v:+.4f}") for m, v in zip(d["model"], d["diff_vs_ets"])],
+                        "KTC 95% của chênh lệch": ["—" if m == "ets" else f"[{num(f'{a:+.4f}')}; {num(f'{b:+.4f}')}]"
+                                                    for m, a, b in zip(d["model"], d["diff_ci_low"], d["diff_ci_high"])]})
+    return md(out)
+
+
+def bootstrap_pairs():
+    rows = []
+    for split, label in (("validation", "Validation"), ("test", "Test")):
+        for r in pd.read_csv(T / split / f"{split}_bootstrap_pairs.csv").itertuples():
+            rows.append({"Tập": label, "Cặp (thứ nhất − thứ hai)": f"{L[r.first]} − {L[r.second]}", "Chênh": num(f"{r.diff:+.4f}"),
+                         "KTC 95%": f"[{num(f'{r.ci_low:+.4f}')}; {num(f'{r.ci_high:+.4f}')}]",
+                         "Khoảng chứa 0": "có" if r.ci_low <= 0 <= r.ci_high else "không"})
+    return md(pd.DataFrame(rows))
+
+
+def class_after_first_sale(split):
+    d = pd.read_csv(T / split / f"{split}_by_demand_class_after_first_sale.csv").set_index("demand_class_after_first_sale")
+    out = d[ORDER].rename(columns=L)
+    out.insert(0, "Số chuỗi", d["n_series"].astype(int))
+    out.insert(0, "Nhóm (sau lần bán đầu tiên)", out.index)
+    return md(out.reset_index(drop=True))
+
+
 def table(name):
     if name == "val_optional":
         return val_optional()
-    special = ("ets_structure", "croston_zp", "lr_coef", "importance")
+    if name in ("val_bootstrap", "test_bootstrap"):
+        return bootstrap(name.split("_")[0].replace("val", "validation"))
+    if name == "bootstrap_pairs":
+        return bootstrap_pairs()
+    if name == "test_class_after_first_sale":
+        return class_after_first_sale("test")
+    # ets_structure, croston_zp, lr_coef and importance come from the first core Validation run that holds the diagnostic file (val-...072831Z)
+    special = ("ets_structure", "croston_zp", "lr_coef", "importance", "runs")
     split = "test" if name.startswith("test_") else "validation"
     base = name if name in special else name.split("_", 1)[1]
     if base == "overall":

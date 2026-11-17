@@ -1,0 +1,6 @@
+first,second,diff,ci_low,ci_high,share_draws_first_better
+croston,lightgbm,-0.004897,-0.011743,0.002029,0.9245
+croston,linear_regression,-0.013946,-0.021076,-0.006686,0.9995
+lightgbm,xgboost,-0.000386,-0.002945,0.002232,0.5985
+lightgbm,catboost,-0.013476,-0.016285,-0.010753,1.0
+xgboost,catboost,-0.013089,-0.015984,-0.010101,1.0

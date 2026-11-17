@@ -26,7 +26,9 @@ from m5.split import to_wide  # noqa: E402
 
 ORDER = ["seasonal_naive", "linear_regression", "ets", "croston", "lightgbm", "xgboost", "catboost"]
 LABEL = {"seasonal_naive": "Seasonal Naive", "linear_regression": "Linear Regression", "ets": "ETS",
-         "croston": "Croston", "lightgbm": "LightGBM", "xgboost": "XGBoost", "catboost": "CatBoost"}
+         "croston": "Croston", "lightgbm": "LightGBM", "xgboost": "XGBoost", "catboost": "CatBoost",
+         "croston_sba": "Croston SBA", "lightgbm_noprice": "LightGBM bỏ giá/sự kiện",
+         "lightgbm_tuned": "LightGBM Tuned", "stacking": "Stacking"}
 
 
 def order(models):
@@ -63,11 +65,11 @@ def main():
     overall = summary.set_index("model").loc[models].copy()
     overall["mae_vs_snaive_pct"] = 100 * (overall["macro_mae"] / base["macro_mae"] - 1)
     overall["rmsse_vs_snaive_pct"] = 100 * (overall["macro_rmsse"] / base["macro_rmsse"] - 1)
-    overall.round(4).to_csv(a.tables / f"{tag}_overall.csv")
+    overall.round(6).to_csv(a.tables / f"{tag}_overall.csv")
 
     # 2. group tables (macro mean of per-series metrics; undefined RMSSE/R2 are NaN and skipped)
     for key in ("demand_class", "cat_id", "state"):
-        g = ps.groupby([key, "model"])[["mae", "rmse", "rmsse", "r2"]].mean().round(4).reset_index()
+        g = ps.groupby([key, "model"])[["mae", "rmse", "rmsse", "r2"]].mean().round(6).reset_index()
         g["model"] = pd.Categorical(g["model"], models, ordered=True)
         g.sort_values([key, "model"]).to_csv(a.tables / f"{tag}_by_{key}.csv", index=False)
         pivot = g.pivot(index=key, columns="model", values="rmsse")[models]
@@ -92,7 +94,7 @@ def main():
         t = j.groupby([key, "model"])["abs_err"].mean().unstack("model")[models]
         if key == "weekday":
             t = t.loc[["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]]
-        t.round(4).to_csv(a.tables / f"{tag}_mae_by_{name}.csv")
+        t.round(6).to_csv(a.tables / f"{tag}_mae_by_{name}.csv")
         fig, ax = plt.subplots(figsize=(8, 4))
         t.plot(ax=ax, marker="o" if key == "weekday" else None)
         ax.set_ylabel("MAE gộp (đơn vị/ngày)")
@@ -126,7 +128,7 @@ def main():
                             "tie_rate": float((mae[m] == mae["seasonal_naive"]).mean()),
                             "median_mae_diff": float((mae[m] - mae["seasonal_naive"]).median())}
                         for m in models if m != "seasonal_naive"}).T
-    win.round(4).to_csv(a.tables / f"{tag}_win_rate_vs_snaive.csv")
+    win.round(6).to_csv(a.tables / f"{tag}_win_rate_vs_snaive.csv")
 
     # 6. objective actual-vs-predicted examples: series at the 10th/50th/90th percentile of Train mean sales
     train = actuals[[f"d_{n}" for n in range(1, SPLITS["train"][1] + 1)]].mean(axis=1).sort_values()

@@ -48,7 +48,27 @@ def group(split, key, metric="rmsse"):
     return md(p.reset_index(drop=True))
 
 
+OPT_LABEL = {"croston_sba": "Croston SBA", "lightgbm_noprice": "LightGBM bỏ giá/sự kiện", "lightgbm_tuned": "LightGBM Tuned (Optuna)",
+             "stacking": "Stacking Ridge"}
+OPT_NOTE = {"croston_sba": "X01", "lightgbm_noprice": "X02", "lightgbm_tuned": "T01; thời gian không gồm 1.295 giây tìm tham số",
+            "stacking": "T02; thời gian chỉ gồm khớp bộ gộp, không gồm các mô hình cơ sở"}
+
+
+def val_optional():
+    """Validation scores of the optional models next to their core references (Test of optional models is not run)."""
+    rows = pd.concat([pd.read_csv(p / "metrics_summary.csv") for p in sorted(RUNS.glob("val-*"))]).set_index("model")
+    names = [m for m in ["lightgbm", "lightgbm_tuned", "lightgbm_noprice", "croston", "croston_sba", "stacking"] if m in rows.index]
+    d = rows.loc[names]
+    lab = {**L, **OPT_LABEL}
+    out = pd.DataFrame({"Mô hình": [lab[m] for m in names], "MAE (macro)": d["macro_mae"].values, "RMSE (macro)": d["macro_rmse"].values,
+                        "RMSSE (macro)": d["macro_rmsse"].values, "fit+predict (s)": [f"{v:.1f}".replace(".", ",") for v in d["fit_predict_s"]],
+                        "Ghi chú": [OPT_NOTE.get(m, "tham chiếu lõi") for m in names]})
+    return md(out, "{:.4f}")
+
+
 def table(name):
+    if name == "val_optional":
+        return val_optional()
     special = ("ets_structure", "croston_zp", "lr_coef", "importance")
     split = "test" if name.startswith("test_") else "validation"
     base = name if name in special else name.split("_", 1)[1]
@@ -114,7 +134,7 @@ def table(name):
         for p in sorted(RUNS.glob("*")):
             e = json.loads((p / "environment.json").read_text())
             rows.append({"run_id": e["run_id"], "split": e["split"], "origin": f"d_{e['origin_day']}", "mô hình": ", ".join(L.get(m, m) for m in e["models"]),
-                         "SHA mã": e["git_sha"][:7], "CPU": e["cpu_count"], "Python": e["python"].split()[0]})
+                         "SHA mã": e["git_sha"][:7], "CPU": e.get("cpu_count", "máy cục bộ"), "Python": e.get("python", "n/a").split()[0]})
         return md(pd.DataFrame(rows))
     raise KeyError(name)
 

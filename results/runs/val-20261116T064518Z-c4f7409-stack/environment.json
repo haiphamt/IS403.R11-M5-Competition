@@ -1,0 +1,38 @@
+{
+  "run_id": "val-20261116T064518Z-c4f7409-stack",
+  "split": "validation",
+  "origin_day": 1885,
+  "git_sha": "c4f74099f1fb529062c89166af6e3ce3dc6a4b3c",
+  "utc": "2026-11-16T06:46:10.019890+00:00",
+  "models": [
+    "stacking"
+  ],
+  "meta": {
+    "alpha": 1000.0,
+    "cv_rmse_leave_one_origin_out": {
+      "0.1": 2.233125436346813,
+      "1.0": 2.2331218886290123,
+      "10.0": 2.2330864754973114,
+      "100.0": 2.232738632102408,
+      "1000.0": 2.229790764418005
+    },
+    "lgbm_in_stack": "tuned",
+    "bases": [
+      "linear_regression",
+      "lightgbm",
+      "xgboost",
+      "catboost"
+    ],
+    "oof_files": [
+      "oof_catboost.parquet",
+      "oof_linear_regression_lightgbm_lightgbm_tuned_xgboost.parquet"
+    ],
+    "oof_rows": 67200,
+    "base_runs": [
+      "val-20261115T072831Z-20b22f7",
+      "val-20261115T073404Z-20b22f7",
+      "val-20261116T015146Z-2ee03bd"
+    ]
+  },
+  "postprocessing": "clip y_pred at 0; no rounding"
+}

@@ -49,7 +49,7 @@ def importance(runs, out):
         d = d.sort_values("share").tail(10)
         ax.barh(d["feature"], d["share"])
         ax.set_title(f"{name} ({d['type'].iloc[0]})", fontsize=9)
-        ax.set_xlabel("Tỷ trọng importance")
+        ax.set_xlabel("Tỷ trọng trong từng mô hình (không so giữa các mô hình)", fontsize=7)
     fig.suptitle("Importance của mô hình đã huấn luyện (mức đóng góp vào dự báo, không phải nhân quả)", fontsize=9)
     fig.tight_layout()
     fig.savefig(out / "m10_feature_importance.png", dpi=140)

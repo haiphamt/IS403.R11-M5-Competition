@@ -124,9 +124,9 @@ def main():
     ap.add_argument("--max-series", type=int, default=None, help="smoke run on the first N sample series")
     args = ap.parse_args()
 
-    if args.split == "test" and args.max_series is None and not git("rev-parse", "-q", "--verify", f"refs/tags/{FREEZE_TAG}"):
+    if args.split == "test" and not git("rev-parse", "-q", "--verify", f"refs/tags/{FREEZE_TAG}"):  # also locks --max-series: no peeking at Test labels
         raise SystemExit(f"Test is locked: tag {FREEZE_TAG} not found (freeze configs first).")
-    if args.split == "test" and args.max_series is None and set(args.models) & set(OPTIONAL_MODELS)             and not git("rev-parse", "-q", "--verify", f"refs/tags/{FREEZE_TAG_V2}"):
+    if args.split == "test" and set(args.models) & set(OPTIONAL_MODELS) and not git("rev-parse", "-q", "--verify", f"refs/tags/{FREEZE_TAG_V2}"):
         raise SystemExit(f"Test of optional models is locked: tag {FREEZE_TAG_V2} not found.")
     lgbm_params = json.loads(Path(args.lgbm_params).read_text()) if args.lgbm_params else None
     split = args.split
@@ -209,7 +209,7 @@ def main():
     (run_dir / "timings.json").write_text(json.dumps(timings, indent=2), encoding="utf-8")
     raw_dir = Path(args.data_dir) if args.data_dir else ROOT / "data" / "raw"
     env = {"run_id": run_id, "split": split, "origin_day": origin, "git_sha": sha,
-           "git_dirty": bool(git("status", "--porcelain")), "utc": datetime.now(timezone.utc).isoformat(),
+           "git_dirty": bool(git("status", "--porcelain", "--", ".", ":(exclude)results")), "utc": datetime.now(timezone.utc).isoformat(),
            "python": sys.version, "platform": platform.platform(), "machine": platform.machine(),
            "cpu_count": __import__("os").cpu_count(), "packages": package_versions(),
            "sample": {"n_series": len(ids), "manifest_sha256": manifest_hash(manifest[manifest["series_id"].isin(ids)]),

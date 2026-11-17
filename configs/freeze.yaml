@@ -1,6 +1,14 @@
 # config-freeze v1: everything that must not change after the Test labels are opened.
 version: 1
-code_sha_validation_runs: 20b22f724337698512504b827c2ebeba544da1c0
+code_sha_validation_runs: 20b22f724337698512504b827c2ebeba544da1c0  # mã trước khi viết lại lịch sử, không còn trong Git (báo cáo, giới hạn ix)
+pre_rewrite_equivalents:   # SHA cũ -> commit tương đương trong lịch sử hiện tại (cùng tree hash = nội dung tệp giống từng byte); chi tiết ở results/pre_rewrite_sha_map.csv
+  20b22f7: d8fe7a1375c3be156aa6a5f657d9f8c61defd3d5   # Gộp PR #6
+  4cc19f7: c1985e1db0ae8ec7b075fa804b0dcdc292e337f5   # Gộp PR #13
+  4994dda: b080335660de0b2b3baab670157b6263c43be1d5   # Gộp PR #15
+archive_tags:
+  - archive/pre-rewrite-4994dda   # run Test CatBoost; lịch sử sạch (không có dòng đồng tác giả AI), còn trên GitHub
+  # archive/pre-rewrite-20b22f7 và archive/pre-rewrite-4cc19f7 đã gỡ khỏi GitHub: lịch sử của chúng có 10 commit mang dòng đồng tác giả Claude; chỉ còn bản cục bộ.
+code_ref_after_rewrite: 9dca59fd979e8bcfdaceec98b1cefe0f9c7c5866    # thẻ config-freeze; src/, configs/, run_experiment.py giống hệt main 7e2543c
 validation_runs:
   - val-20261115T072831Z-20b22f7   # seasonal_naive, linear_regression, ets, croston, lightgbm, xgboost
   - val-20261115T073404Z-20b22f7   # catboost
@@ -10,6 +18,7 @@ sample:
   stratify_by: [store_id, cat_id]
   per_stratum: 40
   manifest: data/sample_series_ids.csv
+  manifest_sha256_definition: "sha256 của các series_id đã sắp xếp, nối bằng xuống dòng; xem m5.sample.manifest_hash (không phải hash của tệp CSV)"
   manifest_sha256: 68d7acc8ef39f266d5b8274569fc25869c4187ba160a07686a2b292b0d5940f4
 splits: {train: [1, 1885], validation: [1886, 1913], test: [1914, 1941]}
 test_recipe: refit every model on d_1..d_1913 with the same configuration, forecast d_1914..d_1941 once
@@ -27,9 +36,12 @@ metric_policy:
 postprocessing: "clip y_pred at 0 for every model; no rounding"
 seeds: {global_models: 42}
 runtime_reporting: "local models: sum of per-series fit+predict; global models: pooled fit+predict; features/IO/warm-up separate; Kaggle CPU, 4 vCPU"
-optional_decisions:
-  T01_optuna_tuned_lightgbm: cut     # not run; default LightGBM is the evaluated configuration
-  T02_stacking_ridge: cut            # not run; no meta-model or out-of-fold forecasts were produced
-  X01_croston_sba: cut
-  X02_lightgbm_without_price_event: cut
-  reason: "Core Validation and Test have priority; optional items were not run within the available time and are reported as not done."
+optional_decisions:     # trạng thái sau PR #24; v1 ở trên (7 mô hình lõi) không đổi
+  T01_optuna_tuned_lightgbm: validation_done   # 30 lượt, chỉ nhãn Validation; best_params ở configs/models/lightgbm_tuned.json, nhật ký ở results/tuning/
+  T02_stacking_ridge: validation_done          # OOF ở results/oof/ (mốc 1829, 1857); run stacking Validation: val-20261116T064518Z-c4f7409-stack; Test chưa chạy
+  X01_croston_sba: validation_done
+  X02_lightgbm_without_price_event: validation_done
+  validation_run_optional: val-20261116T015146Z-2ee03bd   # croston_sba, lightgbm_noprice, lightgbm_tuned (mã nguồn 2ee03bd)
+  config_freeze_v2: pending                    # chưa tạo tag; Test của phần tùy chọn bị khóa cho đến khi có tag config-freeze-v2
+  note: "Nhãn Test của 7 mô hình lõi đã mở trước v2, nên Test của phần tùy chọn không còn là dữ liệu giữ lại hoàn toàn."
+code_changes_since_v1: "PR #24 thêm mã phần tùy chọn; sửa theo review chỉ đổi cách ghi tham số XGBoost (model_parameters.json) và trường git_dirty (loại results/), không đụng đường huấn luyện/dự báo; requirements.txt chỉ thêm optuna và python-pptx. Đã kiểm: chạy lại LightGBM trên Validation bằng mã mới trùng bản đã lưu (lệch tối đa 3,5e-18). XGBoost chạy lại ở máy cục bộ (xgboost 3.2.0) khác bản Kaggle (3.4.1) nên không đối chiếu được ở đó."

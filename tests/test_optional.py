@@ -30,6 +30,17 @@ class OptionalPartsTests(unittest.TestCase):
         _, _, model = global_models.fit_predict("lightgbm_tuned", X, y, Xf, n_jobs=2, lgbm_params={"n_estimators": 7, "num_leaves": 5})
         self.assertEqual((model.n_estimators, model.num_leaves), (7, 5))
 
+    def test_xgboost_parameters_record_real_booster_settings(self):
+        import json
+        p = panel.build_panel(*small_panel())
+        X, y, Xf, _ = global_models.build_table(p, 1885)
+        _, _, model = global_models.fit_predict("xgboost", X, y, Xf, n_jobs=2)
+        params = json.loads(json.dumps(global_models.model_parameters("xgboost", model)))
+        self.assertEqual(params["n_boosted_rounds"], 100)  # library default, not None
+        learner = params["booster_config"]["learner"]["gradient_booster"]["tree_train_param"]
+        self.assertAlmostEqual(float(learner["eta"]), 0.3, places=6)
+        self.assertEqual(int(learner["max_depth"]), 6)
+
     def test_macro_rmsse_matches_metrics_module(self):
         rng = np.random.default_rng(0)
         y = rng.poisson(2, (5, 120)).astype(float)

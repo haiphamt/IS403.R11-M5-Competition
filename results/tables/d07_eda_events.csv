@@ -1,2 +1,2 @@
-event_day_mean,non_event_mean,n_event_days
-0.9627,1.0236,154
+event_day_mean,non_event_mean,n_event_days,weekday_adjusted_ratio
+0.9627,1.0236,154,0.9293

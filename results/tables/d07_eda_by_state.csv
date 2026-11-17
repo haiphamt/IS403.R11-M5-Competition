@@ -1,6 +1,4 @@
-,mean_sales,mean_sales,zero_ratio,zero_ratio
-,mean,count,mean,count
-state,,,,
+state,mean_sales_mean,mean_sales_count,zero_ratio_mean,zero_ratio_count
 CA,1.1154,480,0.6862,480
 TX,1.0601,360,0.7052,360
 WI,0.848,360,0.7176,360

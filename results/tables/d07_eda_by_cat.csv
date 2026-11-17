@@ -1,6 +1,4 @@
-,mean_sales,mean_sales,zero_ratio,zero_ratio
-,mean,count,mean,count
-cat,,,,
+cat,mean_sales_mean,mean_sales_count,zero_ratio_mean,zero_ratio_count
 FOODS,1.796,400,0.612,400
 HOBBIES,0.5391,400,0.7872,400
 HOUSEHOLD,0.7207,400,0.7048,400

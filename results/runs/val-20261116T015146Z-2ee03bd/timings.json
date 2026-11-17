@@ -1,0 +1,30 @@
+{
+  "data_io_panel_s": 9.735106845000018,
+  "warmup_s": 6.887536780000119,
+  "feature_build_s": 2.974135381999986,
+  "croston_sba": {
+    "fit_predict_sum_s": 0.3256436659985411,
+    "wall_s": 0.33850539200011553,
+    "workers": 3,
+    "n_series": 1200,
+    "n_fallback": 0,
+    "scope": "sum over series of per-series fit+predict, single thread each",
+    "n_negative_raw_predictions": 0
+  },
+  "lightgbm_noprice": {
+    "fit_s": 8.817384675000085,
+    "predict_s": 0.04803011600006357,
+    "n_train_rows": 2196000,
+    "threads": 4,
+    "scope": "pooled model: fit + predict wall time (features timed separately)",
+    "n_negative_raw_predictions": 0
+  },
+  "lightgbm_tuned": {
+    "fit_s": 54.721610392,
+    "predict_s": 0.44054302499989717,
+    "n_train_rows": 2196000,
+    "threads": 4,
+    "scope": "pooled model: fit + predict wall time (features timed separately)",
+    "n_negative_raw_predictions": 11
+  }
+}

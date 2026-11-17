@@ -22,7 +22,8 @@ CAT_COLS = ["dept_id", "cat_id", "store_id", "state_id", "wday", "month",
             "event_name_1", "event_type_1", "event_name_2", "event_type_2"]
 NUM_COLS = LAG_ROLL + ["year", "snap", "sell_price", "price_missing"]
 FEATURES = NUM_COLS + CAT_COLS
-MODELS = ["linear_regression", "lightgbm", "xgboost", "catboost"]
+MODELS = ["linear_regression", "lightgbm", "xgboost", "catboost", "lightgbm_noprice", "lightgbm_tuned"]
+NOPRICE_EVENT = ["sell_price", "price_missing", "event_name_1", "event_type_1", "event_name_2", "event_type_2"]  # X02 ablation
 
 
 def build_table(panel: Panel, origin, horizon=HORIZON):
@@ -58,11 +59,12 @@ def build_table(panel: Panel, origin, horizon=HORIZON):
 def _as_category(X):
     X = X.copy()
     for c in CAT_COLS:
-        X[c] = pd.Categorical(X[c].astype(str))
+        if c in X.columns:
+            X[c] = pd.Categorical(X[c].astype(str))
     return X
 
 
-def fit_predict(name, X_train, y_train, X_future, *, n_jobs=8, seed=SEED):
+def fit_predict(name, X_train, y_train, X_future, *, n_jobs=8, seed=SEED, lgbm_params=None):
     """Fit one default-parameter model. Returns (prediction, info, fitted model)."""
     info = {}
     t0 = time.perf_counter()
@@ -77,9 +79,14 @@ def fit_predict(name, X_train, y_train, X_future, *, n_jobs=8, seed=SEED):
                                  ("cat", OneHotEncoder(drop="first", handle_unknown="ignore"), CAT_COLS)])
         model = Pipeline([("pre", pre), ("lr", LinearRegression())])
         Xt, Xf = X_train, X_future
-    elif name == "lightgbm":
+    elif name in ("lightgbm", "lightgbm_noprice", "lightgbm_tuned"):
         from lightgbm import LGBMRegressor
-        model = LGBMRegressor(random_state=seed, n_jobs=n_jobs, verbosity=-1)
+        if name == "lightgbm_noprice":
+            X_train, X_future = X_train.drop(columns=NOPRICE_EVENT), X_future.drop(columns=NOPRICE_EVENT)
+        if name == "lightgbm_tuned" and not lgbm_params:
+            raise ValueError("lightgbm_tuned needs lgbm_params from the Optuna study")
+        extra = lgbm_params if name == "lightgbm_tuned" else {}
+        model = LGBMRegressor(random_state=seed, n_jobs=n_jobs, verbosity=-1, **extra)
         Xt, Xf = _as_category(X_train), _as_category(X_future)
     elif name == "xgboost":
         from xgboost import XGBRegressor
@@ -107,6 +114,10 @@ def model_parameters(name, model):
         return model.named_steps["lr"].get_params()
     if name == "catboost":
         return {**model.get_all_params()}
+    if name == "xgboost":  # get_params() leaves unset values as None; record what the booster really used
+        import json
+        return {**model.get_params(), "n_boosted_rounds": model.get_booster().num_boosted_rounds(),
+                "booster_config": json.loads(model.get_booster().save_config())}
     return model.get_params()
 
 
@@ -124,5 +135,6 @@ def importance_or_coefficients(name, model):
     else:
         imp = model.booster_.feature_importance(importance_type="gain")
         kind = "gain"
-    return pd.DataFrame({"feature": FEATURES, "importance": imp, "type": kind}).sort_values(
+    names = list(getattr(model, "feature_name_", FEATURES))  # shorter for the no-price ablation
+    return pd.DataFrame({"feature": names, "importance": imp, "type": kind}).sort_values(
         "importance", ascending=False)

@@ -30,14 +30,16 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
 from m5 import evaluate, global_models, univariate  # noqa: E402
-from m5.data import load_raw_data  # noqa: E402
+from m5.data import load_raw_data, resolve_raw_dir  # noqa: E402
 from m5.panel import build_panel  # noqa: E402
 from m5.sample import manifest_hash  # noqa: E402
 from m5.schema import HORIZON, SPLITS, forecast_days, validate_predictions  # noqa: E402
 
-LOCAL_MODELS = ["seasonal_naive", "ets", "croston"]
+LOCAL_MODELS = ["seasonal_naive", "ets", "croston", "croston_sba"]
 ALL_MODELS = ["seasonal_naive", "linear_regression", "ets", "croston", "lightgbm", "xgboost", "catboost"]
+OPTIONAL_MODELS = ["croston_sba", "lightgbm_noprice", "lightgbm_tuned"]  # X01, X02, T01 (frozen in config-freeze-v2)
 FREEZE_TAG = "config-freeze"
+FREEZE_TAG_V2 = "config-freeze-v2"
 
 
 def git(*args):
@@ -45,6 +47,27 @@ def git(*args):
         return subprocess.run(["git", *args], cwd=ROOT, capture_output=True, text=True, check=True).stdout.strip()
     except (subprocess.CalledProcessError, FileNotFoundError):
         return ""
+
+
+def git_ok(*args):
+    """True when the git command exits 0 (for yes/no questions such as --is-ancestor)."""
+    try:
+        return subprocess.run(["git", *args], cwd=ROOT, capture_output=True).returncode == 0
+    except FileNotFoundError:
+        return False
+
+
+def freeze_problem(tag, models):
+    """Why Test is not allowed to run (None when it is): tag missing, not contained in HEAD, dirty tree, or a missing config."""
+    if not git("rev-parse", "-q", "--verify", f"refs/tags/{tag}"):
+        return f"tag {tag} not found (freeze configs first)"
+    if not git_ok("merge-base", "--is-ancestor", f"refs/tags/{tag}", "HEAD"):
+        return f"HEAD does not contain tag {tag}: the code differs from the frozen one"
+    if git("status", "--porcelain", "--", ".", ":(exclude)results"):
+        return "working tree has uncommitted changes outside results/"
+    if "lightgbm_tuned" in models and not git_ok("cat-file", "-e", f"refs/tags/{tag}:configs/models/lightgbm_tuned.json"):
+        return f"configs/models/lightgbm_tuned.json is not part of tag {tag}"
+    return None
 
 
 def sha256(path):
@@ -110,7 +133,8 @@ def to_schema(run_id, model, split, series_ids, matrix):
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--split", choices=["validation", "test"], required=True)
-    ap.add_argument("--models", nargs="+", default=ALL_MODELS, choices=ALL_MODELS)
+    ap.add_argument("--models", nargs="+", default=ALL_MODELS, choices=ALL_MODELS + OPTIONAL_MODELS)
+    ap.add_argument("--lgbm-params", default=None, help="JSON with the Optuna best parameters (for lightgbm_tuned)")
     ap.add_argument("--data-dir", default=None)
     ap.add_argument("--manifest", default=str(ROOT / "data" / "sample_series_ids.csv"))
     ap.add_argument("--out", default=str(ROOT / "results" / "runs"))
@@ -121,8 +145,13 @@ def main():
     ap.add_argument("--max-series", type=int, default=None, help="smoke run on the first N sample series")
     args = ap.parse_args()
 
-    if args.split == "test" and args.max_series is None and not git("rev-parse", "-q", "--verify", f"refs/tags/{FREEZE_TAG}"):
-        raise SystemExit(f"Test is locked: tag {FREEZE_TAG} not found (freeze configs first).")
+    if args.split == "test":  # also locks --max-series subsets: no peeking at Test labels before the freeze
+        problem = freeze_problem(FREEZE_TAG, [])  # v1 predates the optional configs: only v2 must contain lightgbm_tuned.json
+        if problem is None and set(args.models) & set(OPTIONAL_MODELS):
+            problem = freeze_problem(FREEZE_TAG_V2, args.models)
+        if problem:
+            raise SystemExit(f"Test is locked: {problem}.")
+    lgbm_params = json.loads(Path(args.lgbm_params).read_text()) if args.lgbm_params else None
     split = args.split
     origin = SPLITS[split][0] - 1
     sha = git("rev-parse", "HEAD")
@@ -171,7 +200,7 @@ def main():
                     diag[model].append({"series_id": r["series_id"], **r["info"]})
         else:
             X, y, Xf, keys = table
-            pred, info, fitted = global_models.fit_predict(model, X, y, Xf, n_jobs=args.n_jobs)
+            pred, info, fitted = global_models.fit_predict(model, X, y, Xf, n_jobs=args.n_jobs, lgbm_params=lgbm_params)
             keys = keys.assign(pred=pred)
             order = keys.pivot(index="series_id", columns="d_num", values="pred").loc[ids]
             matrix = order.to_numpy()
@@ -201,14 +230,14 @@ def main():
         table_.to_csv(run_dir / f"diag_{model}_{'coefficients' if model == 'linear_regression' else 'importance'}.csv", index=False)
     (run_dir / "model_parameters.json").write_text(json.dumps(params, indent=2), encoding="utf-8")
     (run_dir / "timings.json").write_text(json.dumps(timings, indent=2), encoding="utf-8")
-    raw_dir = Path(args.data_dir) if args.data_dir else ROOT / "data" / "raw"
+    raw_dir, raw_files = resolve_raw_dir(args.data_dir)  # the directory actually read (also /kaggle/input)
     env = {"run_id": run_id, "split": split, "origin_day": origin, "git_sha": sha,
-           "git_dirty": bool(git("status", "--porcelain")), "utc": datetime.now(timezone.utc).isoformat(),
+           "git_dirty": bool(git("status", "--porcelain", "--", ".", ":(exclude)results")), "utc": datetime.now(timezone.utc).isoformat(),
            "python": sys.version, "platform": platform.platform(), "machine": platform.machine(),
            "cpu_count": __import__("os").cpu_count(), "packages": package_versions(),
            "sample": {"n_series": len(ids), "manifest_sha256": manifest_hash(manifest[manifest["series_id"].isin(ids)]),
                       "seed": 42, "per_stratum": 40},
-           "data_sha256": {p.name: sha256(p) for p in sorted(raw_dir.glob("*.csv"))} if raw_dir.exists() else {},
+           "data_dir": str(raw_dir), "data_sha256": {n: sha256(raw_dir / n) for n in raw_files},
            "models": args.models, "postprocessing": "clip y_pred at 0 for every model; no rounding",
            "args": {k: v for k, v in vars(args).items()}}
     (run_dir / "environment.json").write_text(json.dumps(env, indent=2, default=str), encoding="utf-8")

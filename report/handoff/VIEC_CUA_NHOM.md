@@ -16,6 +16,8 @@ Tất cả PR #4–#20 đều do tài khoản `NgKthy` tạo và merge; GitHub k
 
 PR #4 và #6 chưa có reviewer: cần người nhóm vào xem (gợi ý: Tuấn Hải xem #4, Thùy Trang xem #6).
 
+*Cập nhật 18/11/2026:* Tuấn Hải đã để nhận xét rà soát (có hỗ trợ tự động) ở #4, #5, #9, #15, #16, #17, #19, #20; Thùy Trang đã review #15, #17, #20, #21; sửa theo các nhận xét này ở PR #28. Các nhận xét của Tuấn Hải nhắc tới PR #29 (Tóm tắt/Kết luận) và #30 (D03, P05, M09) chưa gộp vào `main` tại thời điểm này.
+
 ## 2. M09 – mỗi người chạy lại một run của người khác
 
 Quy tắc: chạy theo README mục 11, **chỉ trên Validation hoặc tập con** (Test đã mở, không chạy lại để so điểm), ghi lỗi hoặc chỗ thiếu vào README mục 10 hoặc `report/handoff/`.
@@ -27,6 +29,8 @@ Quy tắc: chạy theo README mục 11, **chỉ trên Validation hoặc tập co
 | Thanh Tiền | Linear Regression (Thùy Trang, M03) | `python scripts/run_experiment.py --split validation --models linear_regression --max-series 200` |
 | Thủy Tiên | XGBoost và CatBoost (Thanh Tiền, M05/M06) | `python scripts/run_experiment.py --split validation --models xgboost catboost --max-series 50` |
 | Thùy Trang | Seasonal Naive + gộp/phân tích (Tuấn Hải, D06) | `python scripts/run_experiment.py --split validation --models seasonal_naive --max-series 200` rồi `scripts/collect_runs.py`, `scripts/analyze_results.py` |
+
+*Cập nhật 18/11/2026:* phần của Tuấn Hải (ETS/Croston, 50 chuỗi Validation) đã có biên bản ở PR #30 (chưa gộp): dự báo khớp run `val-20261115T072831Z-20b22f7` (lệch tuyệt đối tối đa 1,67 × 10⁻¹⁶ với ETS, 0 với Croston). Bốn người còn lại chưa ghi nhận.
 
 Cần dữ liệu M5 trong `data/raw/` (hoặc `--data-dir`). Kết quả tập con khác kết quả 1.200 chuỗi; chỉ kiểm tra chạy được và số liệu hợp lý, không dùng thay bảng chính. Muốn chạy đủ 1.200 chuỗi thì dùng notebook `notebooks/02_m5_full_run.ipynb` / `02b_m5_catboost_run.ipynb` trên Kaggle.
 
@@ -41,6 +45,8 @@ AI mới kiểm tra cấu trúc `report/slides/m5_nhom6.pptx` (16 slide, không 
 | Thanh Tiền | 3, 7 (XGBoost/CatBoost), 11, 12 |
 | Thủy Tiên | 7 (LightGBM), 9, 10, 14 |
 | Thùy Trang | 5, 7 (Linear Regression) |
+
+*Cập nhật 18/11/2026:* Tuấn Hải đã xem các slide 1, 2, 3, 4, 6, 13, 15, 16 (các slide còn lại do người khác xem); hình ở slide 13 đã được tách nhãn ở PR #28, cần xem lại.
 
 Thời lượng seminar chính thức **chưa được xác minh**: cần hỏi giảng viên để cắt bớt slide cho vừa giờ.
 

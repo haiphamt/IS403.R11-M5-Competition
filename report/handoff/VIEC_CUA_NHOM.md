@@ -1,6 +1,6 @@
 # Việc của nhóm sau khi AI bàn giao (chỉ người thật làm được)
 
-Trạng thái lúc bàn giao (15/11/2026): `main` @ `7e2543c`, 7 mô hình có Validation và Test thật. Những việc dưới đây AI **không** làm và **không** được đánh dấu Done thay nhóm. Phân công bám cột Owner/Reviewer trong checklist (tài khoản GitHub: Tuấn Hải = `haiphamt`, Tuấn Vũ = `Yuu2006`, Thanh Tiền = `tienlelttt`, Thủy Tiên = `NgKthy`, Thùy Trang = `ThorBietBay001`). Mọi đề xuất chia việc dưới đây là gợi ý của AI để nhóm chỉnh lại nếu cần.
+Trạng thái lúc bàn giao (15/11/2026): `main` @ `7e2543c`, 7 mô hình có Validation và Test thật. **Cập nhật lần cuối 18/11/2026:** `main` @ `7ab8149` (đã gộp PR #22, #25, #27; phần tùy chọn có kết quả Validation, Test chưa chạy; đã có bản nháp handoff 7 mô hình). Những việc dưới đây AI **không** làm và **không** được đánh dấu Done thay nhóm. Phân công bám cột Owner/Reviewer trong checklist (tài khoản GitHub: Tuấn Hải = `haiphamt`, Tuấn Vũ = `Yuu2006`, Thanh Tiền = `tienlelttt`, Thủy Tiên = `NgKthy`, Thùy Trang = `ThorBietBay001`). Mọi đề xuất chia việc dưới đây là gợi ý của AI để nhóm chỉnh lại nếu cần.
 
 ## 1. Review và approve các PR
 
@@ -65,11 +65,11 @@ Ba nguồn còn lại cũng chỉ được đối chiếu qua tóm tắt/abstrac
 - **W10 – đọc chéo báo cáo, đối chiếu số liệu với `results/tables/`** (Tất cả, người phụ trách Tuấn Hải; hạn kế hoạch 23/11). Chia mục gợi ý: Tuấn Hải: Tóm tắt, mục 1, mục 5; Tuấn Vũ: mục 3.5–3.6 và 4.1; Thanh Tiền: mục 2, các hình, bảng theo nhóm; Thủy Tiên: bảng Validation/Test và phần Q1–Q3 của 4.2; Thùy Trang: mục 3.1–3.4, 3.7–3.10, tài liệu tham khảo, định dạng. Sửa văn bản bằng PR; bảng sinh lại bằng `python scripts/build_report.py` (không sửa số tay). Sản phẩm: danh sách lỗi đã sửa.
 - **W11 – nộp báo cáo (file Word)**: Thùy Trang (hạn kế hoạch 24/11), chỉ sau W10; người dùng tự định dạng, AI không nộp bài.
 - **P07 – tập dượt lần 1, bấm giờ** (Tất cả, Tuấn Hải điều phối; 23/11) và **P08 – tập dượt lần 2, một người đóng vai thầy hỏi** (24/11; gợi ý Thùy Trang đóng vai thầy, dùng `report/qa.md` làm bộ câu hỏi): cả nhóm cùng tham gia; điều chỉnh thời lượng theo giờ giảng viên quy định. Nếu seminar sớm hơn thì kéo P07/P08 lên.
-- Ngoài ra còn **F09** (mỗi chủ mô hình viết 3–5 dòng giải thích hành vi mô hình vào `report/handoff/<mô hình>.md`) và **P06** (đọc lại phần hỏi đáp của nhau): chưa có file handoff theo từng mô hình; phần giải thích hiện nằm trong mục 4.2 của báo cáo.
+- Ngoài ra còn **F09** (mỗi chủ mô hình viết 3–5 dòng giải thích hành vi mô hình vào `report/handoff/<mô hình>.md`) và **P06** (đọc lại phần hỏi đáp của nhau): đã có bản nháp handoff 7 mô hình trong `report/handoff/` (thêm ở PR #23); mỗi chủ mô hình đọc, sửa và xác nhận file của mình (phần giải thích cũng nằm trong mục 4.2 của báo cáo).
 
 ## 7. Cập nhật Jira và Google Sheet
 
-AI không đụng vào Jira hoặc Sheet. Mỗi người tự cập nhật task của mình dựa trên bằng chứng trong `ThuyTien_playbook/execution/git_delivery_ledger.csv` (cột PR, merge SHA, run_id) và các file trong repo; chỉ chuyển sang Done khi đã tự đối chiếu, không chuyển chỉ vì AI đã làm. Task chung cho từng người:
+AI không đụng vào Jira hoặc Sheet. Mỗi người tự cập nhật task của mình dựa trên bằng chứng ai cũng xem được: danh sách PR trên GitHub, `results/runs/*/environment.json` (run_id, `git_sha`), `results/pre_rewrite_sha_map.csv` và `configs/freeze.yaml`; chỉ chuyển sang Done khi đã tự đối chiếu, không chuyển chỉ vì AI đã làm. Task chung cho từng người:
 
 | Người | Task riêng cần cập nhật (theo bảng phân công) | Ghi chú trạng thái |
 |---|---|---|

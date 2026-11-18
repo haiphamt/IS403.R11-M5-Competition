@@ -19,7 +19,7 @@ sys.path.insert(0, str(ROOT / "src"))
 from m5 import optional  # noqa: E402
 from m5.schema import SPLITS  # noqa: E402
 
-ORDER = ["seasonal_naive", "linear_regression", "ets", "croston", "lightgbm", "xgboost", "catboost"]
+ORDER = ["seasonal_naive", "linear_regression", "ets", "croston", "croston_sba", "lightgbm", "xgboost", "catboost", "stacking"]  # tables keep the models present, in this order
 NAMES = ("low_zero(<=0.5)", "mid_zero(0.5-0.8]", "high_zero(>0.8)")
 
 
@@ -40,13 +40,14 @@ def main():
     ap.add_argument("--runs", nargs="+", required=True, type=Path)
     ap.add_argument("--out", required=True, type=Path)
     ap.add_argument("--data-dir", default=None)
+    ap.add_argument("--manifest", type=Path, default=None, help="series list (default: the 1,200-series sample)")
     a = ap.parse_args()
-    panel = optional.load_sample_panel(a.data_dir)
+    panel = optional.load_sample_panel(a.data_dir, manifest=a.manifest)
     all_days, after, first = zero_shares(panel.y[:, :SPLITS["train"][1]])
     old, new = classify(all_days), classify(after)
     alt = pd.Series(new, index=panel.series_ids, name="alt_class").rename_axis("series_id").reset_index()
     ps = pd.concat([pd.read_csv(r / "metrics_per_series.csv") for r in a.runs]).merge(alt, on="series_id")
-    table = ps.groupby(["alt_class", "model"]).rmsse.mean().unstack()[ORDER]
+    table = ps.groupby(["alt_class", "model"]).rmsse.mean().unstack()[[m for m in ORDER if m in set(ps["model"])]]
     table.insert(0, "n_series", ps.groupby("alt_class").series_id.nunique())
     a.out.mkdir(parents=True, exist_ok=True)
     table.round(6).reset_index().rename(columns={"alt_class": "demand_class_after_first_sale"}).to_csv(
@@ -58,7 +59,7 @@ def main():
         "n_change_class": [int((old != new).sum())], "n_high_to_lower": [int(((old == NAMES[2]) & (new != NAMES[2])).sum())],
         **{f"n_{n.split('(')[0]}_all_days": [int((old == n).sum())] for n in NAMES},
         **{f"n_{n.split('(')[0]}_after_first_sale": [int((new == n).sum())] for n in NAMES}})
-    summary.round(6).to_csv(a.out.parent / "d02_demand_class_after_first_sale.csv", index=False)
+    summary.round(6).to_csv(a.out.parent / f"d02_demand_class_after_first_sale{'_full' if a.manifest else ''}.csv", index=False)
     print(table.round(3).to_string()); print(summary.T.to_string(header=False))
 
 

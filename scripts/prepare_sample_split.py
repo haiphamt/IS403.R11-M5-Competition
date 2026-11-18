@@ -19,6 +19,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
 from m5.sample import manifest_hash, representativeness, select_stratified  # noqa: E402
+from m5.schema import series_id_from_id  # noqa: E402
 from m5.split import split_wide, to_wide  # noqa: E402
 
 EXPECTED = {"calendar.csv": (1969, 14), "sales_train_validation.csv": (30490, 1919),
@@ -61,9 +62,14 @@ def main():
     cal = pd.read_csv(raw / "calendar.csv")
     report["unique_ids"] = bool(sales["id"].is_unique)
     report["calendar_d_unique"] = bool(cal["d"].is_unique and len(cal) == 1969)
-    day_cols = [c for c in val.columns if c.startswith("d_")]
-    merged = val.set_index("id")[day_cols].equals(sales.set_index("id")[day_cols])
-    report["validation_file_equals_evaluation_d1_1913"] = bool(merged)
+    day_cols = [f"d_{day}" for day in range(1, 1914)]
+    wide = to_wide(sales)
+    val.index = val["id"].map(series_id_from_id)
+    same_series = val.index.is_unique and wide.index.difference(val.index).empty
+    report["validation_file_equals_evaluation_d1_1913"] = same_series and all(
+        val[day].equals(wide[day].reindex(val.index)) for day in day_cols
+    )
+    del val
     report["negative_sales"] = int((sales.filter(like="d_") < 0).sum().sum())
     report["missing_sales"] = int(sales.filter(like="d_").isna().sum().sum())
 
@@ -74,7 +80,6 @@ def main():
                         "n_series": len(manifest), "manifest_sha256": manifest_hash(manifest),
                         "n_strata": int(manifest.groupby(["store_id", "cat_id"]).ngroups)}
 
-    wide = to_wide(sales)
     rep = representativeness(wide, manifest["series_id"])
     tables = ROOT / "results" / "tables"
     tables.mkdir(parents=True, exist_ok=True)

@@ -55,3 +55,15 @@ optional_decisions:     # trạng thái sau PR #24; v1 ở trên (7 mô hình l�
       - "python scripts/run_stacking.py --split test --oof results/oof/*.parquet --lgbm tuned --base-runs <run Test lõi (LR, XGBoost), run Test CatBoost, run Test tùy chọn>"
   note: "Nhãn Test của 7 mô hình lõi đã mở trước v2, nên Test của phần tùy chọn không còn là dữ liệu giữ lại hoàn toàn."
 code_changes_since_v1: "PR #24 thêm mã phần tùy chọn; sửa theo review chỉ đổi cách ghi tham số XGBoost (model_parameters.json) và trường git_dirty (loại results/), không đụng đường huấn luyện/dự báo; khóa Test siết chặt (tag phải nằm trong HEAD, cây sạch, kể cả --max-series) và ghi SHA-256 của năm CSV; requirements.txt chỉ thêm optuna và python-pptx. Đã kiểm: chạy lại LightGBM trên Validation bằng mã mới trùng bản đã lưu (lệch tối đa 3,5e-18). XGBoost chạy lại ở máy cục bộ (xgboost 3.2.0) khác bản Kaggle (3.4.1) nên không đối chiếu được ở đó."
+full_data_v3:   # 18/11/2026: nghiên cứu chính chuyển sang TOÀN BỘ 30.490 chuỗi và 5 mô hình; tag config-freeze và config-freeze-v2 được tạo lại tại commit đưa khối này vào (thay cho các tag đã gỡ)
+  reason: "Nhóm rút gọn còn 5 mô hình (3 lõi + 2 mới) và chạy toàn bộ dữ liệu thay cho mẫu 1.200 chuỗi; kết quả 1.200 chuỗi giữ lại như pilot"
+  manifest: data/full_series_ids_with_class.csv   # scripts/prepare_full_manifest.py; lớp nhu cầu theo tỷ lệ ngày 0 trên d_1..d_1885 (cùng quy tắc mẫu)
+  manifest_sha256: 56a6267c780b27e917d143db3ad351c0cca278a0f8d84ef2e227f90e0080bc68   # m5.sample.manifest_hash
+  n_series: 30490
+  models_core: [seasonal_naive, ets, lightgbm]        # cấu hình như v1 (LightGBM mặc định thư viện, cùng đặc trưng)
+  models_new: [croston_sba, stacking]                  # X01; T02 lai
+  stacking: {meta: ridge, alphas: [0.1, 1, 10, 100, 1000], alpha_selection: leave-one-origin-out, oof_origins: [1829, 1857], bases: [ets, croston_sba, lightgbm], lgbm_in_stack: default, clip_at_zero: true}
+  dropped: [linear_regression, croston, xgboost, catboost, lightgbm_tuned, lightgbm_noprice]   # còn trong mã và trong kết quả pilot 1.200 chuỗi
+  code_changes: "build_table dựng cột phân loại từ mã số (không tạo chuỗi chữ cho từng dòng) và giữ số thực float64: dự báo LightGBM trên 1.200 chuỗi trùng bản đã lưu (lệch tối đa 1,8e-15); evaluator vector hóa, khớp bản cũ (lệch tối đa 1,4e-13); backtest_oof thêm mô hình cục bộ; run_stacking nhận --bases"
+  jobs: "scripts/kaggle_full_run.py --task validation | test | oof --origins 1829 | oof --origins 1857 (mỗi job một notebook Kaggle)"
+  caveat: "Nhãn Test đã được xem trên 1.200 chuỗi (3,9% số chuỗi) trước khi chốt bộ 5 mô hình, nên Test toàn bộ không còn hoàn toàn mù"

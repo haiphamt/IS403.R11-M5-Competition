@@ -29,6 +29,8 @@ Thời gian: mô hình cục bộ là tổng thời gian huấn luyện và dự
 LightGBM là thời gian trên toàn bộ dữ liệu với 4 luồng, stacking chỉ tính bước khớp bộ gộp. Stacking lai tốt nhất trên Test theo cả hai độ đo,
 nhưng chênh lệch với ETS ở cấp đáy rất nhỏ và đổi chiều trên Validation (ETS 0,737, stacking 0,738; LightGBM có WRMSSE Validation thấp nhất, 0,591).
 Croston SBA tốt ở cấp sản phẩm–cửa hàng nhưng kém nhất ở các cấp tổng hợp vì dự báo phẳng không có chu kỳ tuần.
+Về chi phí chạy, Croston SBA đạt macro-RMSSE 0,769 trong khoảng 10,5 giây CPU, gần ETS (0,758) nhưng ít hơn khoảng 3.350 lần
+(35.121 giây so với 10,5 giây tổng CPU); với hàng bán không đều ở cấp từng chuỗi, đây là lựa chọn nên thử trước.
 
 - Báo cáo: [`report/draft_report.md`](report/draft_report.md); slide: `report/slides/m5_nhom6.pptx`; hỏi đáp: `report/qa.md`.
 - Nghiên cứu chính: dự báo và metrics theo `run_id` ở `results/full/runs/`, backtest ở `results/full/oof/`, bảng/hình ở

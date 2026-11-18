@@ -64,3 +64,17 @@ pilot (3,9% số chuỗi) đã được xem trước khi chọn năm mô hình; 
 **15. Local hay global?**
 Seasonal Naive, ETS, Croston SBA là local (một mô hình mỗi chuỗi, chỉ dùng lịch sử chuỗi đó). LightGBM là global (một mô hình cho mọi chuỗi,
 dùng thêm giá/lịch/SNAP/nhóm). Stacking gộp cả hai. Khác biệt input là yếu tố gây nhiễu khi so thứ hạng.
+
+**16. Smoke khác full reproduction thế nào?**
+Smoke chạy cùng pipeline trên tập nhỏ (F10: 12 chuỗi, 7 mô hình, 42 bài kiểm thử ở lần chạy đó) để kiểm tra chạy được end-to-end; không tái lập
+các con số và không dùng Test để phát triển. Nghiên cứu chính chạy lại toàn bộ trên Kaggle (`notebooks/06a–06d`).
+
+**17. Đồ án đóng góp gì so với M5?**
+Đồ án đối chiếu năm cách tiếp cận trên cùng 30.490 chuỗi và cùng kỳ dự báo 28 ngày, báo cáo sai số theo mức độ gián đoạn, theo 12 cấp WRMSSE
+và ghi lại thời gian tính toán. Trong nhóm chuỗi có trên 80% số ngày bán bằng 0 ở tập huấn luyện, ETS, stacking và Croston SBA có macro-RMSSE Test
+thấp hơn LightGBM; ở các cấp tổng hợp thì ngược lại. Đóng góp nằm ở cách so sánh và phân tích theo nhóm và theo cấp.
+
+**18. Vì sao bảng chính chưa dùng Tweedie?**
+Bảng chính dùng cấu hình đã khóa trước khi chạy Test, trong đó LightGBM dùng hàm mất mát bình phương mặc định.
+Tweedie là một lựa chọn huấn luyện đã được dùng tại M5. Nhóm có thể đánh giá lựa chọn này trên nhiều cửa sổ giữ lại
+để kiểm mức cải thiện trước khi đưa vào cấu hình chính thức.

@@ -86,7 +86,8 @@ def main():
           ["Makridakis và cs. (2022): M5, 42.840 chuỗi, 12 cấp, WRMSSE",
            "Đội thắng dùng LightGBM, hơn ES_bu 22,4% trên 12 cấp nhưng chỉ khoảng 3,4% ở cấp sản phẩm–cửa hàng",
            "ETS (Hyndman & Khandakar 2008), Croston (1972) và SBA (Syntetos & Boylan 2005), LightGBM (Ke và cs. 2017)",
-           "Kết hợp dự báo là kết luận lặp lại của M5"])
+           "Kết hợp dự báo là kết luận lặp lại của M5",
+           "Đồ án: 5 cách tiếp cận trên cùng 30.490 chuỗi; xếp hạng bằng macro-RMSSE, kèm WRMSSE như M5"])
     keep = [m for m in pilot.sort_values().index if m in LABEL and m != "lightgbm_noprice"]
     slide("Thiết kế hai giai đoạn: pilot rồi toàn bộ dữ liệu", "Tuấn Hải (D03), Thanh Tiền (D02): pilot 11 mô hình trên 1.200 chuỗi để chọn 5.",
           ["Pilot: 7 mô hình lõi + 4 phương án mở rộng trên 1.200 chuỗi phân tầng",

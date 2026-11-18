@@ -53,7 +53,7 @@
   },
   "unique_ids": true,
   "calendar_d_unique": true,
-  "validation_file_equals_evaluation_d1_1913": false,
+  "validation_file_equals_evaluation_d1_1913": true,
   "negative_sales": 0,
   "missing_sales": 0,
   "sample": {

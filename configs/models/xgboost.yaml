@@ -3,6 +3,8 @@ model: xgboost
 strategy: global
 changed_from_default: {random_state: 42, n_jobs: 4, enable_categorical: true}
 parameters_recorded_in: results/runs/val-20261115T072831Z-20b22f7/model_parameters.json
-n_estimators: None
-learning_rate: None
-max_depth: None
+# model_parameters.json of the v1 runs shows None for these (library defaults left unset); the values the xgboost 3.4.1 booster uses:
+n_estimators: 100
+learning_rate: 0.3      # eta
+max_depth: 6
+note: "xgboost 3.2.0 (a local re-run) gives different forecasts from 3.4.1; keep the pinned version for exact reproduction"

@@ -44,12 +44,14 @@ def importance(runs, out):
     fig, axes = plt.subplots(1, 3, figsize=(14, 4))
     for ax, (name, f) in zip(axes, files.items()):
         path = next((Path(r) / f for r in runs if (Path(r) / f).exists()), None)
+        if path is None:
+            raise FileNotFoundError(f"không run nào trong {list(runs)} có {f} (cần cho importance của {name})")
         d = pd.read_csv(path)
         d["share"] = d["importance"] / d["importance"].sum()
         d = d.sort_values("share").tail(10)
         ax.barh(d["feature"], d["share"])
         ax.set_title(f"{name} ({d['type'].iloc[0]})", fontsize=9)
-        ax.set_xlabel("Tỷ trọng importance")
+        ax.set_xlabel("Tỷ trọng trong từng mô hình (không so giữa các mô hình)", fontsize=7)
     fig.suptitle("Importance của mô hình đã huấn luyện (mức đóng góp vào dự báo, không phải nhân quả)", fontsize=9)
     fig.tight_layout()
     fig.savefig(out / "m10_feature_importance.png", dpi=140)

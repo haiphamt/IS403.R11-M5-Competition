@@ -66,6 +66,14 @@ def croston(y):
     return fc, {"croston_z": z, "croston_p": p, "croston_zp": z / p}
 
 
+def croston_sba(y):
+    from statsforecast.models import CrostonSBA
+    model = CrostonSBA()  # classic Croston with the Syntetos-Boylan bias correction
+    model.fit(y)
+    fc = np.asarray(model.predict(h=HORIZON)["mean"], dtype=float)
+    return fc, {}
+
+
 def forecast_one(name, y):
     if name == "seasonal_naive":
         return seasonal_naive(y, HORIZON, SEASON), {}
@@ -73,6 +81,8 @@ def forecast_one(name, y):
         return ets(y)
     if name == "croston":
         return croston(y)
+    if name == "croston_sba":
+        return croston_sba(y)
     raise ValueError(f"unknown model {name!r}")
 
 

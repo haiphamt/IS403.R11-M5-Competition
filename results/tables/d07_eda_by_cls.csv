@@ -1,6 +1,4 @@
-,mean_sales,mean_sales,zero_ratio,zero_ratio
-,mean,count,mean,count
-cls,,,,
+cls,mean_sales_mean,mean_sales_count,zero_ratio_mean,zero_ratio_count
 high_zero(>0.8),0.1596,520,0.8939,520
 low_zero(<=0.5),3.5457,233,0.3364,233
 mid_zero(0.5-0.8],0.7006,447,0.6675,447

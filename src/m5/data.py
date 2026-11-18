@@ -62,6 +62,13 @@ def _find_raw_dir(config, data_dir):
     )
 
 
+def resolve_raw_dir(data_dir=None, config_path=DEFAULT_CONFIG):
+    """Directory (explicit, M5_DATA_DIR, local data/raw or /kaggle/input) that load_raw_data reads from."""
+    with Path(config_path).open(encoding="utf-8") as handle:
+        config = yaml.safe_load(handle)
+    return _find_raw_dir(config, data_dir), list(config["files"].values())
+
+
 def load_raw_data(data_dir=None, *, nrows=None, config_path=DEFAULT_CONFIG, table_names=None):
     """Read all five M5 tables or the specified table names.
 

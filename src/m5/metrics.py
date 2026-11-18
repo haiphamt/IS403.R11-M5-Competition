@@ -33,13 +33,11 @@ def rmse(y_true, y_pred):
     return float(np.sqrt(np.mean((y_true - y_pred) ** 2)))
 
 
-def rmsse(y_true, y_pred, y_train):
-    """RMSE divided by the in-sample one-step naive RMSE of ``y_train``.
+def rmsse_scale(y_train):
+    """Mean squared one-step naive error of ``y_train`` from its first non-zero value (the RMSSE denominator).
 
-    Raises ValueError when the scale is zero (history constant after the first
-    non-zero value, or too short), because the ratio would be NaN/inf.
+    Raises ValueError when the scale is undefined (all zeros, too short, or constant after the first sale).
     """
-    y_true, y_pred = _pair(y_true, y_pred)
     train = _as_1d(y_train, "y_train")
     nonzero = np.flatnonzero(train)
     if nonzero.size == 0:
@@ -47,7 +45,13 @@ def rmsse(y_true, y_pred, y_train):
     scale = np.mean(np.diff(train[nonzero[0]:]) ** 2) if train.size - nonzero[0] > 1 else 0.0
     if scale == 0:
         raise ValueError("y_train has zero naive scale, RMSSE is undefined")
-    return float(np.sqrt(np.mean((y_true - y_pred) ** 2) / scale))
+    return float(scale)
+
+
+def rmsse(y_true, y_pred, y_train):
+    """RMSE divided by the in-sample one-step naive RMSE of ``y_train`` (see ``rmsse_scale``)."""
+    y_true, y_pred = _pair(y_true, y_pred)
+    return float(np.sqrt(np.mean((y_true - y_pred) ** 2) / rmsse_scale(y_train)))
 
 
 def r2(y_true, y_pred):

@@ -36,13 +36,14 @@ metric_policy:
 postprocessing: "clip y_pred at 0 for every model; no rounding"
 seeds: {global_models: 42}
 runtime_reporting: "local models: sum of per-series fit+predict; global models: pooled fit+predict; features/IO/warm-up separate; Kaggle CPU, 4 vCPU"
+freeze_tags_removed: "18/11/2026: các tag config-freeze và config-freeze-v2 đã gỡ khỏi GitHub theo yêu cầu của nhóm; khi chưa có tag, scripts/run_experiment.py khóa split test. Cấu hình bên dưới vẫn là cấu hình đã dùng cho các run Test hiện có."
 optional_decisions:     # trạng thái sau PR #24; v1 ở trên (7 mô hình lõi) không đổi
   T01_optuna_tuned_lightgbm: validation_done   # 30 lượt, chỉ nhãn Validation; best_params ở configs/models/lightgbm_tuned.json, nhật ký ở results/tuning/
   T02_stacking_ridge: validation_done          # OOF ở results/oof/ (mốc 1829, 1857); run stacking Validation: val-20261116T064518Z-c4f7409-stack; Test chưa chạy
   X01_croston_sba: validation_done
   X02_lightgbm_without_price_event: validation_done
   validation_run_optional: val-20261116T015146Z-2ee03bd   # croston_sba, lightgbm_noprice, lightgbm_tuned (mã nguồn 2ee03bd)
-  config_freeze_v2: tagged                     # 18/11/2026: tag config-freeze-v2 = commit đưa dòng này vào; Test của phần tùy chọn chỉ chạy một lần sau tag
+  config_freeze_v2: removed                    # 18/11/2026: đã tạo tag config-freeze-v2 (commit 5fac4bf), chạy Test tùy chọn (tes-20261118T033447Z-5fac4bf, tes-20261118T034102Z-5fac4bf-stack), rồi gỡ tag theo yêu cầu của nhóm để còn chạy và sửa tiếp; tạo lại tag khi chốt
   config_freeze_v2_frozen:                     # những gì bị khóa ở v2 (ngoài mọi thứ ở v1)
     lightgbm_tuned_json_sha256: d7b31d3be861772ae4f384edc555c1e00c110b765e733515739a7e21ba2e4b2e   # configs/models/lightgbm_tuned.json (30 lượt Optuna, chỉ nhãn Validation)
     oof_sha256:                                # OOF trong Train (nhãn <= d_1885) để khớp Ridge của stacking

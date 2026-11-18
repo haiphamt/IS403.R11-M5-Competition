@@ -79,7 +79,8 @@ def main():
     slide("Nghiên cứu nền", "Thanh Tiền (S04) và từng chủ mô hình: M5 là bối cảnh, không phải thứ hạng để so trực tiếp.",
           ["Makridakis và cs. (2022): tổng kết M5, 42.840 chuỗi, WRMSSE", "Đội thắng dùng LightGBM; chỉ 7,5% đội vượt đối chuẩn thống kê tốt nhất",
            "ETS (Hyndman & Khandakar 2008), Croston (1972), boosting (Friedman 2001; Ke 2017; Chen 2016; Prokhorenkova 2018)",
-           "Khác biệt: RMSSE/MAE trên mẫu 1.200 chuỗi, không phải WRMSSE"])
+           "Đồ án so sánh bảy mô hình trên cùng 1.200 chuỗi, báo cáo sai số theo mức độ gián đoạn",
+           "Cuộc thi M5 xếp hạng bằng WRMSSE. Đồ án dùng macro-RMSSE để so sánh các mô hình."])
     slide("Dữ liệu, mẫu và chia thời gian", "Tuấn Hải (D03), Thanh Tiền (D02/D07).",
           ["Mẫu: 10 cửa hàng × 3 category × 40 chuỗi, seed 42", "Train d_1–1885, Validation d_1886–1913, Test d_1914–1941",
            "Test mở sau tag config-freeze; refit trên d_1–1913", "Không chọn lại mẫu sau khi thấy kết quả"],

@@ -71,3 +71,16 @@ Phần liên hệ tồn kho mới là gợi ý vì nhóm chưa đo chi phí tồ
 **15. Smoke khác full reproduction thế nào?**
 Smoke chạy cùng pipeline trên tập nhỏ (F10: 12 chuỗi, 7 mô hình, 42 bài kiểm thử) để kiểm tra chạy được end-to-end; không tái lập
 các con số toàn mẫu và không dùng Test để phát triển.
+
+
+**16. Đồ án đóng góp gì so với M5?**
+
+Đồ án đối chiếu bảy mô hình trên cùng 1.200 chuỗi phân tầng và cùng kỳ dự báo 28 ngày. Nhóm so sánh sai số
+theo mức độ gián đoạn và ghi lại thời gian tính toán. Trong nhóm chuỗi có trên 80% số ngày bán bằng 0 ở tập huấn luyện,
+ETS và Croston có macro-RMSSE Test thấp hơn các mô hình cây. Đóng góp nằm ở cách so sánh và phân tích theo nhóm.
+
+**17. Vì sao bảng chính chưa dùng Tweedie?**
+
+Bảng chính dùng cấu hình đã khóa trước khi mở nhãn Test, trong đó LightGBM dùng hàm mất mát bình phương mặc định.
+Tweedie là một lựa chọn huấn luyện đã được dùng tại M5. Nhóm có thể đánh giá lựa chọn này trên nhiều cửa sổ giữ lại
+để kiểm mức cải thiện trước khi đưa vào cấu hình chính thức.

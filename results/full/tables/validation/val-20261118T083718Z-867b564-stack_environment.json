@@ -1,0 +1,35 @@
+{
+  "run_id": "val-20261118T083718Z-867b564-stack",
+  "split": "validation",
+  "origin_day": 1885,
+  "git_sha": "867b564fd749921442c51201f91e4e98b1868ec7",
+  "utc": "2026-11-18T08:37:56.823825+00:00",
+  "models": [
+    "stacking"
+  ],
+  "meta": {
+    "alpha": 0.1,
+    "cv_rmse_leave_one_origin_out": {
+      "0.1": 2.2353537885469237,
+      "1.0": 2.2353537929084455,
+      "10.0": 2.2353538365261016,
+      "100.0": 2.235354272946369,
+      "1000.0": 2.2353586614004644
+    },
+    "lgbm_in_stack": "default",
+    "bases": [
+      "ets",
+      "croston_sba",
+      "lightgbm"
+    ],
+    "oof_files": [
+      "oof_1829.parquet",
+      "oof_1857.parquet"
+    ],
+    "oof_rows": 1707440,
+    "base_runs": [
+      "val-20261118T054238Z-c8ba5c8"
+    ]
+  },
+  "postprocessing": "clip y_pred at 0; no rounding"
+}

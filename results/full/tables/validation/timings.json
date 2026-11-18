@@ -1,0 +1,49 @@
+{
+  "seasonal_naive": {
+    "fit_predict_sum_s": 0.6971278400011442,
+    "wall_s": 2.4393036179999967,
+    "workers": 4,
+    "n_series": 30490,
+    "n_fallback": 0,
+    "scope": "sum over series of per-series fit+predict, single thread each",
+    "n_negative_raw_predictions": 0,
+    "run_id": "val-20261118T054238Z-c8ba5c8"
+  },
+  "ets": {
+    "fit_predict_sum_s": 34832.20152507208,
+    "wall_s": 8720.412489287999,
+    "workers": 4,
+    "n_series": 30490,
+    "n_fallback": 0,
+    "scope": "sum over series of per-series fit+predict, single thread each",
+    "n_negative_raw_predictions": 20187,
+    "run_id": "val-20261118T054238Z-c8ba5c8"
+  },
+  "croston_sba": {
+    "fit_predict_sum_s": 8.685284850107564,
+    "wall_s": 4.427031020999493,
+    "workers": 4,
+    "n_series": 30490,
+    "n_fallback": 0,
+    "scope": "sum over series of per-series fit+predict, single thread each",
+    "n_negative_raw_predictions": 0,
+    "run_id": "val-20261118T054238Z-c8ba5c8"
+  },
+  "lightgbm": {
+    "fit_s": 253.3164187250004,
+    "predict_s": 1.6460065960000065,
+    "n_train_rows": 55796700,
+    "threads": 4,
+    "scope": "pooled model: fit + predict wall time (features timed separately)",
+    "n_negative_raw_predictions": 0,
+    "run_id": "val-20261118T054238Z-c8ba5c8"
+  },
+  "stacking": {
+    "fit_s": 15.21584659999644,
+    "predict_s": 0.0,
+    "n_oof_rows": 1707440,
+    "scope": "Ridge meta fit on Train out-of-fold backtests (base fits not included)",
+    "n_negative_raw_predictions": 0,
+    "run_id": "val-20261118T083718Z-867b564-stack"
+  }
+}

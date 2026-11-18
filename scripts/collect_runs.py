@@ -55,7 +55,8 @@ def main():
         for f in r.glob("diag_*.csv"):
             shutil.copy(f, a.out / f.name)
         for f in ("model_parameters.json", "environment.json"):
-            shutil.copy(r / f, a.out / f"{r.name}_{f}")
+            if (r / f).exists():  # stacking runs have no model_parameters.json (the meta coefficients are in diag_stacking_coefficients.csv)
+                shutil.copy(r / f, a.out / f"{r.name}_{f}")
     print(summary.round(4).to_string(index=False))
 
 

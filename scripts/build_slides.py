@@ -1,37 +1,30 @@
-"""Build the seminar deck (pptx) from result tables.
+"""Build the seminar deck (pptx) of the full-data study (all 30,490 series, 5 models) from result tables.
 
-Numbers about results come from results/tables/*.csv. Typed by hand (not read from a file): literature facts on slide 3
-(Makridakis et al. 2022: 42.840 series, 7,5%), the sample design on slide 4 (10 stores x 3 categories x 40, seed 42,
-split dates) and model settings on slides 5-8 (copied from configs/models/ and src/m5/).
+Numbers about results come from results/full/tables/*.csv and the pilot runs (results/runs); typed by hand: literature facts on
+slide 3 (Makridakis et al. 2022) and model settings on slides 5-8 (copied from configs/ and src/m5/).
 
-    python scripts/build_slides.py            # needs results/tables/{validation,test}/ and results/figures/{validation,test}/
-Speaker notes carry the responsibility area of each slide. Time per slide is a suggestion only: the official
-seminar length was not verified.
+    python scripts/build_slides.py      # needs results/full/tables/{validation,test}/ and results/full/figures/{validation,test}/
+Speaker notes carry the responsibility area of each slide. Time per slide is a suggestion only: the official seminar length was not verified.
 """
 from pathlib import Path
 
 import pandas as pd
 from pptx import Presentation
-from pptx.util import Emu, Inches, Pt
+from pptx.util import Inches, Pt
 
-from build_report import num  # decimal comma and a true minus sign, same as the report tables
+from build_report import L as LABEL, ORDER, PILOT_RUNS, num  # same labels, model order and number format as the report
 
 ROOT = Path(__file__).resolve().parents[1]
-T, F = ROOT / "results" / "tables", ROOT / "results" / "figures"
+T, F = ROOT / "results" / "full" / "tables", ROOT / "results" / "full" / "figures"
 OUT = ROOT / "report" / "slides" / "m5_nhom6.pptx"
-LABEL = {"seasonal_naive": "Seasonal Naive", "linear_regression": "Linear Regression", "ets": "ETS", "croston": "Croston",
-         "lightgbm": "LightGBM", "xgboost": "XGBoost", "catboost": "CatBoost"}
-ORDER = list(LABEL)
-
-
-def overall(split):
-    d = pd.read_csv(T / split / f"{split}_overall.csv", index_col=0).loc[ORDER]
-    return d
-
 
 prs = Presentation()
 prs.slide_width, prs.slide_height = Inches(13.333), Inches(7.5)
 BLANK = prs.slide_layouts[6]
+
+
+def overall(split):
+    return pd.read_csv(T / split / f"{split}_overall.csv", index_col=0).loc[ORDER]
 
 
 def slide(title, notes, bullets=None, image=None, table=None, caption=None):
@@ -46,7 +39,7 @@ def slide(title, notes, bullets=None, image=None, table=None, caption=None):
         tf.word_wrap = True
         for i, b in enumerate(bullets):
             para = tf.paragraphs[0] if i == 0 else tf.add_paragraph()
-            para.text, para.font.size = "• " + b, Pt(20)
+            para.text, para.font.size = "• " + b, Pt(18)
             para.space_after = Pt(8)
     if image is not None and Path(image).exists():
         s.shapes.add_picture(str(image), Inches(6.8 if bullets else 1.5), top, width=Inches(6.0 if bullets else 10.3))
@@ -74,82 +67,88 @@ def slide(title, notes, bullets=None, image=None, table=None, caption=None):
 
 
 def main():
-    val, test = overall("validation"), overall("test")
-    best_t = test["macro_rmsse"].idxmin()
-    rep_ = pd.read_csv(T / "d02_sample_representativeness.csv", index_col=0)
-    zero_s = rep_.loc["zero_ratio", "sample"]
-    slowest = LABEL[test["fit_predict_s"].idxmax()]
-    wd = pd.read_csv(T / "test" / "test_mae_by_weekday.csv", index_col=0)["ets"]
-    wk = wd.drop(["Saturday", "Sunday"])
-    slide("Dự báo nhu cầu bán lẻ M5: so sánh bảy mô hình", "Mở đầu (Tuấn Hải). Giới thiệu đề tài, nhóm, phạm vi: 28 ngày, 1.200 chuỗi.",
-          ["IS403.R11 – Phân tích dữ liệu kinh doanh – Nhóm 6", "Dữ liệu Walmart M5, mẫu phân tầng 1.200 chuỗi, horizon 28 ngày",
-           "Seasonal Naive, Linear Regression, ETS, Croston, LightGBM, XGBoost, CatBoost"])
+    c = lambda x: f"{x:.3f}".replace(".", ",")
+    sg = lambda x: num(f"{x:+.4f}")
+    others = [m for m in ORDER if m != "seasonal_naive"]
+    wr = {sp: pd.read_csv(T / sp / f"{sp}_wrmsse.csv").set_index("model") for sp in ("validation", "test")}
+    test = overall("test")
+    best_t, best_w = test["macro_rmsse"].idxmin(), wr["test"].loc[ORDER, "wrmsse"].idxmin()
+    ci = pd.read_csv(T / "test" / "test_bootstrap_ci.csv").set_index("model")
+    pilot = pd.concat([pd.read_csv(p / "metrics_summary.csv") for p in sorted(PILOT_RUNS.glob("tes-*"))]).set_index("model")["macro_rmsse"]
+    slide("Dự báo nhu cầu bán lẻ M5: năm cách tiếp cận trên toàn bộ dữ liệu", "Mở đầu (Tuấn Hải). Đề tài, nhóm, phạm vi: 30.490 chuỗi, 28 ngày.",
+          ["IS403.R11 – Phân tích dữ liệu kinh doanh – Nhóm 6", "Walmart M5: toàn bộ 30.490 chuỗi sản phẩm–cửa hàng, horizon 28 ngày",
+           "Seasonal Naive, ETS, Croston SBA, LightGBM, Stacking lai"])
     slide("Bài toán và động lực", "Tuấn Hải: đầu vào/ra, vì sao dự báo ảnh hưởng bổ sung hàng.",
           ["Đầu vào: lịch sử bán, lịch/sự kiện, SNAP, giá tuần", "Đầu ra: 28 dự báo điểm không âm cho mỗi chuỗi sản phẩm–cửa hàng",
-           f"Thách thức: nhu cầu gián đoạn ({zero_s:.0%} ngày bán 0 trong mẫu), mùa vụ tuần, rò rỉ thông tin", "Chưa đo chi phí tồn kho: không tuyên bố tác động kinh doanh"])
-    slide("Nghiên cứu nền", "Thanh Tiền (S04) và từng chủ mô hình: M5 là bối cảnh, không phải thứ hạng để so trực tiếp.",
-          ["Makridakis và cs. (2022): tổng kết M5, 42.840 chuỗi, WRMSSE", "Đội thắng dùng LightGBM; chỉ 7,5% đội vượt đối chuẩn thống kê tốt nhất",
-           "ETS (Hyndman & Khandakar 2008), Croston (1972), boosting (Friedman 2001; Ke 2017; Chen 2016; Prokhorenkova 2018)",
-           "Khác biệt: RMSSE/MAE trên mẫu 1.200 chuỗi, không phải WRMSSE"])
-    slide("Dữ liệu, mẫu và chia thời gian", "Tuấn Hải (D03), Thanh Tiền (D02/D07).",
-          ["Mẫu: 10 cửa hàng × 3 category × 40 chuỗi, seed 42", "Train d_1–1885, Validation d_1886–1913, Test d_1914–1941",
-           "Test mở sau khóa cấu hình (tag config-freeze, đã gỡ 18/11); refit trên d_1–1913", "Không chọn lại mẫu sau khi thấy kết quả"],
-          table=pd.DataFrame({"Chỉ tiêu": ["Chuỗi", "Tỷ lệ ngày 0", "Doanh số TB"],
-                              **{k: [f"{int(rep_.loc['n_series', c]):,}".replace(",", "."), num(f"{rep_.loc['zero_ratio', c]:.3f}"), num(f"{rep_.loc['mean_sales', c]:.3f}")]
-                                 for k, c in (("Toàn bộ", "all"), ("Mẫu", "sample"))}}))
+           "Thách thức: nhu cầu gián đoạn (39% số chuỗi có trên 80% ngày bán 0), mùa vụ tuần, rò rỉ thông tin",
+           "Chưa đo chi phí tồn kho: không tuyên bố tác động kinh doanh"])
+    slide("Nghiên cứu nền", "Thanh Tiền (S04): M5 là bối cảnh; Test của nhóm trùng giai đoạn public leaderboard M5.",
+          ["Makridakis và cs. (2022): M5, 42.840 chuỗi, 12 cấp, WRMSSE",
+           "Đội thắng dùng LightGBM, hơn ES_bu 22,4% trên 12 cấp nhưng chỉ khoảng 3,4% ở cấp sản phẩm–cửa hàng",
+           "ETS (Hyndman & Khandakar 2008), Croston (1972) và SBA (Syntetos & Boylan 2005), LightGBM (Ke và cs. 2017)",
+           "Kết hợp dự báo là kết luận lặp lại của M5"])
+    keep = [m for m in pilot.sort_values().index if m in LABEL and m != "lightgbm_noprice"]
+    slide("Thiết kế hai giai đoạn: pilot rồi toàn bộ dữ liệu", "Tuấn Hải (D03), Thanh Tiền (D02): pilot 11 mô hình trên 1.200 chuỗi để chọn 5.",
+          ["Pilot: 7 mô hình lõi + 4 phương án mở rộng trên 1.200 chuỗi phân tầng",
+           "Chọn 5 đại diện 5 cách tiếp cận; bỏ mô hình trùng vai trò hoặc không đứng vững trên Test",
+           "Chính thức: 30.490 chuỗi; Train d_1–1885, Validation d_1886–1913, Test d_1914–1941",
+           "Test chạy một lần sau tag config-freeze (tạo lại cho cấu hình toàn bộ dữ liệu)"],
+          table=pd.DataFrame({"Pilot (Test)": [{**LABEL, "stacking": "Stacking cũ (4 mô hình học máy)"}[m] for m in keep],
+                              "RMSSE": [float(pilot[m]) for m in keep],
+                              "Chọn": ["dựng lại (lai)" if m == "stacking" else "có" if m in ORDER else "" for m in keep]}))
     slide("Đặc trưng và chống rò rỉ", "Thùy Trang (D04): lag ≥ 28, rolling shift 28, kiểm thử làm hỏng nhãn tương lai.",
-          ["lag 28/35/42; rolling mean/std 7 và 28 sau shift 28", "Lịch, sự kiện, SNAP theo bang, giá tuần (NaN + price_missing)", "Dự báo trực tiếp 28 ngày từ origin",
-           "Test: làm hỏng mọi nhãn sau origin, feature không đổi", "Giả định: giá ngày dự báo được biết trước"])
-    slide("Mô hình thống kê", "Tuấn Vũ (ETS/Croston) và Tuấn Hải (Seasonal Naive).",
-          ["Seasonal Naive: ŷ(T+h)=y(T−6+((h−1) mod 7))", "ETS: AutoETS chu kỳ 7, chọn theo AICc, mỗi chuỗi một mô hình",
-           "Croston: z (lượng bán), p (khoảng cách), ŷ=z/p, α=0,1", "Local: chỉ dùng lịch sử doanh số của chính chuỗi"])
-    slide("Hồi quy và boosting", "Thùy Trang (LR), Thủy Tiên (LightGBM), Thanh Tiền (XGBoost, CatBoost).",
-          ["Linear Regression: impute trung vị, chuẩn hóa, one-hot", "Boosting: F_m(x)=F_{m−1}(x)+η f_m(x), tham số mặc định thư viện",
-           "Global: một mô hình cho toàn mẫu, cùng bảng đặc trưng", "Chỉ đặt seed, luồng, khai báo categorical"])
-    slide("Độ đo", "Tuấn Vũ (W03/P03): công thức, edge cases.",
-          ["MAE, RMSE theo chuỗi; RMSSE chuẩn hóa bằng sai số naïve một bước", "R² có thể âm; hằng → không xác định",
-           "Không epsilon: NaN + lý do, loại khỏi macro, đếm riêng", "Xếp hạng: macro-RMSSE; pooled MAE/RMSE báo cáo riêng", "WRMSSE của M5 ≠ trung bình RMSSE"])
-    d = val.reset_index()[["model", "macro_mae", "macro_rmse", "macro_rmsse", "macro_r2", "fit_predict_s"]]
-    d["model"] = d["model"].map(LABEL)
-    d.columns = ["Mô hình", "MAE", "RMSE", "RMSSE", "R²", "fit+predict (s)"]
-    slide("Kết quả Validation (d_1886–1913)", "Thủy Tiên (W07/P04). Dùng để chọn cấu hình; không có tuning.", table=d,
-          caption="Nguồn: results/tables/validation/validation_overall.csv; macro trên chuỗi xác định; runtime local và global không cùng phạm vi.")
-    d = test.reset_index()[["model", "macro_mae", "macro_rmse", "macro_rmsse", "macro_r2", "fit_predict_s"]]
-    d["model"] = d["model"].map(LABEL)
-    d.columns = ["Mô hình", "MAE", "RMSE", "RMSSE", "R²", "fit+predict (s)"]
-    slide("Kết quả Test (d_1914–1941)", "Thủy Tiên: Test của 7 mô hình lõi chạy một lần sau config-freeze (tag đã gỡ 18/11); refit d_1–1913.", table=d,
-          caption="Nguồn: results/tables/test/test_overall.csv; cùng mẫu, cùng chính sách metric.")
+          ["lag 28/35/42; rolling mean/std 7 và 28 sau shift 28", "Lịch, sự kiện, SNAP theo bang, giá tuần (NaN + price_missing)",
+           "Dự báo trực tiếp 28 ngày từ origin; kiểm thử làm hỏng mọi nhãn sau origin, đặc trưng không đổi",
+           "Toàn bộ dữ liệu: khoảng 56 triệu dòng huấn luyện, cột phân loại dựng từ mã số để vừa 30 GB RAM"])
+    slide("Mô hình cục bộ: Seasonal Naive, ETS, Croston SBA", "Tuấn Hải (Seasonal Naive), Tuấn Vũ (ETS, Croston SBA).",
+          ["Seasonal Naive: ŷ(T+h)=y(T−6+((h−1) mod 7)), mốc đối chuẩn", "ETS: AutoETS chu kỳ 7, chọn cấu trúc theo AICc, mỗi chuỗi một mô hình",
+           "Croston SBA: z (lượng bán), p (khoảng cách), ŷ=(1−α/2)·z/p, α=0,1", "Chỉ dùng lịch sử doanh số của chính chuỗi"])
+    slide("LightGBM và Stacking lai", "Thủy Tiên (LightGBM), Thùy Trang (stacking).",
+          ["LightGBM: một mô hình cho 30.490 chuỗi, tham số mặc định, F_m = F_{m−1} + η·f_m",
+           "Stacking lai: ŷ = max(0, β0 + β1·ETS + β2·SBA + β3·LightGBM)",
+           "β khớp bằng Ridge trên dự báo ngoài mẫu trong Train (mốc 1829, 1857)", "alpha chọn bằng leave-one-origin-out; không chạm Validation/Test"])
+    slide("Độ đo", "Tuấn Vũ (W03/P03): công thức, edge cases, WRMSSE.",
+          ["MAE, RMSE theo chuỗi; RMSSE chuẩn hóa bằng sai số naïve một bước trên Train", "Xếp hạng chính: macro-RMSSE trên 30.490 chuỗi",
+           "WRMSSE: 12 cấp, 42.840 chuỗi, trọng số doanh thu 28 ngày cuối (như M5)", "R² có thể âm; chuỗi nhãn hằng → R² không xác định, không dùng epsilon"])
+    for split, title, note in (("validation", "Kết quả Validation (d_1886–1913)", "Thủy Tiên (W07/P04): báo cáo trước khi khóa cấu hình."),
+                               ("test", "Kết quả Test (d_1914–1941)", "Thủy Tiên: Test chạy một lần sau tag config-freeze; refit d_1–1913.")):
+        o = overall(split)
+        d = pd.DataFrame({"Mô hình": [LABEL[m] for m in ORDER], "MAE": o["macro_mae"].values, "RMSE": o["macro_rmse"].values,
+                          "RMSSE": o["macro_rmsse"].values, "WRMSSE": wr[split].loc[ORDER, "wrmsse"].values, "fit+predict (s)": o["fit_predict_s"].values})
+        slide(title, note, table=d,
+              caption=f"Nguồn: results/full/tables/{split}/{split}_overall.csv, {split}_wrmsse.csv; macro trên 30.490 chuỗi; thời gian local/global khác phạm vi; stacking chỉ tính bước khớp bộ gộp.")
+    lv = wr["test"].loc[ORDER]
+    slide("WRMSSE theo cấp và đối chiếu M5", "Thanh Tiền (F08): Test của nhóm trùng giai đoạn public leaderboard M5.",
+          [f"Tốt nhất theo WRMSSE trên Test: {LABEL[best_w]} ({c(lv.loc[best_w, 'wrmsse'])}); theo macro-RMSSE: {LABEL[best_t]}",
+           "Cấp tổng (cấp 1): " + ", ".join(f"{LABEL[m]} {c(lv.loc[m, 'level_1'])}" for m in others),
+           "Cấp sản phẩm–cửa hàng (cấp 12): " + ", ".join(f"{LABEL[m]} {c(lv.loc[m, 'level_12'])}" for m in others),
+           "Chỉ một cửa sổ 28 ngày; không phải bài nộp thi"])
     cls = pd.read_csv(T / "test" / "test_by_demand_class.csv").pivot(index="demand_class", columns="model", values="rmsse")
-    c = lambda x: f"{x:.3f}".replace(".", ",")
     hz, lz = cls.loc["high_zero(>0.8)"], cls.loc["low_zero(<=0.5)"]
-    trees = [hz[m] for m in ("lightgbm", "xgboost", "catboost")]
-    slide("Theo nhóm nhu cầu", "Thanh Tiền (F08): nhóm theo tỷ lệ ngày 0 trên Train; số lấy từ test_by_demand_class.csv.", image=F / "test" / "test_rmsse_by_demand_class.png",
-          bullets=[f"Hàng bán chậm (trên 80% ngày không bán): ETS {c(hz['ets'])}, Croston {c(hz['croston'])}, ba mô hình cây {c(min(trees))}–{c(max(trees))}",
-                   f"Hàng bán thường xuyên (tối đa 50% ngày không bán): ETS {c(lz['ets'])}, CatBoost {c(lz['catboost'])}",
+    slide("Theo nhóm nhu cầu", "Thanh Tiền (F08): nhóm theo tỷ lệ ngày 0 trên Train; số lấy từ test_by_demand_class.csv.",
+          image=F / "test" / "test_rmsse_by_demand_class.png",
+          bullets=["Hàng bán chậm (trên 80% ngày không bán): " + ", ".join(f"{LABEL[m]} {c(hz[m])}" for m in others),
+                   "Hàng bán thường xuyên (tối đa 50% ngày không bán): " + ", ".join(f"{LABEL[m]} {c(lz[m])}" for m in others),
                    "Chỉ là liên hệ trên một cửa sổ 28 ngày"])
+    wd = pd.read_csv(T / "test" / "test_mae_by_weekday.csv", index_col=0)[best_t]
+    wk = wd.drop(["Saturday", "Sunday"])
     slide("Theo thứ trong tuần và horizon", "Thanh Tiền (F08).", image=F / "test" / "test_mae_by_horizon.png",
-          bullets=["MAE gộp theo horizon 1–28 (hình)", f"Sai số cao hơn vào cuối tuần: MAE của ETS Thứ Bảy {c(wd['Saturday'])}, Chủ nhật {c(wd['Sunday'])}, ngày thường {c(wk.min())}–{c(wk.max())}",
-                   "Cả bảy mô hình đều cao hơn vào cuối tuần (xem test_mae_by_weekday.csv)"])
-    slide("Đánh đổi độ chính xác và thời gian", "Tuấn Hải/Thủy Tiên: không so trực tiếp runtime local và global.", image=F / "test" / "test_accuracy_runtime.png",
-          bullets=["Thời gian: local = tổng fit+predict từng chuỗi; global = fit toàn mẫu", f"{slowest} mặc định chậm nhất trên CPU 4 lõi"])
-    ov = {sp: pd.concat([pd.read_csv(r / "metrics_summary.csv") for r in sorted((ROOT / "results" / "runs").glob(f"{sp}-*"))]).set_index("model")["macro_rmsse"] for sp in ("val", "tes")}
-    names = ["ets", "croston", "croston_sba", "lightgbm", "lightgbm_noprice", "lightgbm_tuned", "stacking"]
-    opt_lab = {**LABEL, "croston_sba": "Croston SBA", "lightgbm_noprice": "LightGBM bỏ giá/sự kiện", "lightgbm_tuned": "LightGBM Tuned", "stacking": "Stacking Ridge"}
-    pr = {sp: pd.read_csv(T / sp / f"{sp}_bootstrap_optional_pairs.csv").set_index(["first", "second"])["diff"] for sp in ("validation", "test")}
-    sg = lambda x: num(f"{x:+.4f}")
-    slide("Phần tùy chọn: kết quả Validation và Test", "Thủy Tiên (T01, X02), Tuấn Vũ (X01), Thùy Trang (T02): Test chạy 18/11/2026 sau tag config-freeze-v2 (đã gỡ), máy cục bộ; nhãn Test lõi đã mở trước nên không còn là dữ liệu giữ lại hoàn toàn.",
-          [f"Tuned hơn Default trên Validation ({sg(pr['validation'][('lightgbm_tuned', 'lightgbm')])}) nhưng không hơn trên Test ({sg(pr['test'][('lightgbm_tuned', 'lightgbm')])})",
-           f"SBA tốt hơn Croston ở cả hai tập ({sg(pr['validation'][('croston_sba', 'croston')])}; {sg(pr['test'][('croston_sba', 'croston')])})",
-           f"Bỏ giá/sự kiện không làm xấu ({sg(pr['test'][('lightgbm_noprice', 'lightgbm')])} trên Test, khoảng tin cậy chạm 0)",
-           f"Stacking ngang LightGBM ({sg(pr['test'][('stacking', 'lightgbm')])}); không mô hình nào vượt ETS"],
-          table=pd.DataFrame({"Mô hình": [opt_lab[m] for m in names], "RMSSE Val": [ov["val"][m] for m in names], "RMSSE Test": [ov["tes"][m] for m in names]}),
-          caption="Nguồn: results/runs/*/metrics_summary.csv, results/tables/*/*_bootstrap_optional_pairs.csv; chênh lệch là macro-RMSSE cặp (âm = mô hình đầu tốt hơn).")
+          bullets=["MAE gộp theo horizon 1–28 (hình)",
+                   f"Cuối tuần sai nhiều hơn: MAE của {LABEL[best_t]} Thứ Bảy {c(wd['Saturday'])}, Chủ nhật {c(wd['Sunday'])}, ngày thường {c(wk.min())}–{c(wk.max())}"])
+    slide("Đánh đổi độ chính xác và thời gian", "Tuấn Hải/Thủy Tiên: thời gian local và global khác phạm vi.", image=F / "test" / "test_accuracy_runtime.png",
+          bullets=["Thời gian: local = tổng fit+predict từng chuỗi (4 tiến trình); global = fit trên toàn bộ dữ liệu",
+                   "Stacking chỉ tốn thêm bước khớp bộ gộp, nhưng cần đủ ba mô hình cơ sở"])
     slide("Insight và giới hạn", "Thủy Tiên: kết luận gắn với bảng/hình; nêu giới hạn.",
-          ["Một cửa sổ Test 28 ngày; mẫu 1.200 chuỗi", "Khác biệt input giữa local và global gây nhiễu thứ hạng", "Giả định giá tương lai; importance không phải nhân quả",
-           "Phần tùy chọn: Test chạy sau khi nhãn Test lõi đã mở, không còn là dữ liệu giữ lại hoàn toàn; tag khóa đã gỡ", "Smoke ≠ tái lập toàn bộ"])
+          ["Chênh macro-RMSSE Test so với ETS: " + ", ".join(f"{LABEL[m]} {sg(ci.loc[m, 'diff_vs_ets'])}" for m in others if m != "ets"),
+           "Trên Validation thứ tự đổi: ETS nhỉnh hơn stacking, LightGBM có WRMSSE thấp nhất → chênh lệch nhỏ không bền vững",
+           "Croston SBA tốt ở cấp đáy nhưng kém nhất ở cấp tổng hợp (dự báo phẳng, không có chu kỳ tuần)",
+           "Một cửa sổ Test 28 ngày; nhãn Test của 1.200 chuỗi pilot đã được xem trước khi chọn mô hình",
+           "Khác biệt input local/global; giả định giá tương lai; importance không phải nhân quả"])
     slide("Kết luận và hướng phát triển", "Tuấn Hải (W08/P05).",
-          [f"Mô hình tốt nhất trên Test theo macro-RMSSE: {LABEL[best_t]}", "Mọi mô hình cải thiện rõ so với Seasonal Naive (xem bảng)", "Hướng: rolling-origin nhiều mùa, WRMSSE phân cấp, mô phỏng tồn kho, dự báo xác suất"])
-    slide("Q&A", "Cả nhóm: xem report/qa.md.", ["Câu hỏi dự kiến: horizon 28, lag ≥ 28, RMSSE vs WRMSSE, R² âm, AICc, Croston z/p, hệ số LR, boosting cộng cây, giá tương lai, local/global"])
+          [f"Tốt nhất trên Test: {LABEL[best_t]} theo macro-RMSSE, {LABEL[best_w]} theo WRMSSE", "Mọi mô hình cải thiện rõ so với Seasonal Naive",
+           "Hướng: rolling-origin nhiều mùa, mô phỏng tồn kho, dự báo xác suất"])
+    slide("Q&A", "Cả nhóm: xem report/qa.md.",
+          ["Câu hỏi dự kiến: vì sao 5 mô hình, pilot, lag ≥ 28, RMSSE và WRMSSE, Croston SBA, stacking lai, giá tương lai, local/global"])
     OUT.parent.mkdir(parents=True, exist_ok=True)
     prs.save(OUT)
     print("saved", OUT, len(prs.slides), "slides")

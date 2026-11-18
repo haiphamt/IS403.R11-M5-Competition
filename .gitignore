@@ -32,3 +32,7 @@ Desktop.ini
 # Local personal playbook
 /ThuyTien_playbook/
 /SOURCES.md
+
+# Collected copies of run outputs (regenerate with scripts/collect_runs.py; the runs themselves are tracked)
+results/full/tables/*/predictions.parquet
+results/full/tables/*/metrics_per_series.csv

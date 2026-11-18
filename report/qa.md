@@ -1,73 +1,66 @@
 # Câu hỏi – đáp dự kiến khi bảo vệ (đồ án M5, Nhóm 6)
 
-Các câu trả lời dựa trên cấu hình và mã trong repo. Số liệu cụ thể xem `report/draft_report.md`
-và `results/tables/`; các số dưới đây lấy từ bảng nguồn nêu kèm.
+Các câu trả lời dựa trên cấu hình và mã trong repo. Số liệu xem `report/draft_report.md` và `results/full/tables/`;
+các số dưới đây lấy từ bảng nguồn nêu kèm (nghiên cứu chính: toàn bộ 30.490 chuỗi, 5 mô hình).
 
-**1. Vì sao horizon 28 ngày?**
-Đúng với cuộc thi M5 (hai kỳ dự báo 28 ngày) và với chu kỳ bổ sung hàng ngắn hạn của bán lẻ.
-Cả bốn mô hình global dự báo trực tiếp cả 28 ngày từ cùng một origin, nên đặc trưng phải lùi ≥ 28 ngày.
+**1. Vì sao chỉ 5 mô hình?**
+Pilot trên 1.200 chuỗi đã chạy 11 mô hình (Bảng P1). Nhóm giữ mỗi cách tiếp cận một đại diện: Seasonal Naive (mốc), ETS (làm mượt mũ),
+Croston SBA (hàng bán thưa), LightGBM (học máy global) và stacking lai (kết hợp). XGBoost, CatBoost ngang LightGBM nhưng chậm hơn
+(CatBoost ước tính khoảng 14 giờ CPU trên toàn bộ dữ liệu); Croston cổ điển kém SBA; Linear Regression kém nhất nhóm học máy; LightGBM Tuned
+không giữ được lợi thế trên Test của pilot.
 
-**2. Vì sao lag ≥ 28 (28/35/42) và rolling shift 28?**
-Ngày dự báo xa nhất là T+28, nên chỉ quan sát đến T mới chắc chắn có. Lag 28 của ngày T+28 là y(T);
-lag nhỏ hơn 28 sẽ dùng nhãn chưa biết. `tests/test_no_leakage.py` làm hỏng mọi nhãn sau origin
-và kiểm tra feature/target không đổi.
+**2. Vì sao chạy toàn bộ 30.490 chuỗi thay vì mẫu?**
+Bỏ sai số do lấy mẫu (mẫu pilot lệch về chuỗi gián đoạn: 43,3% so với 39,1%) và tính được WRMSSE 12 cấp như M5, vì WRMSSE cần mọi chuỗi đáy.
+Thứ tự bốn mô hình cơ sở trên Test giống pilot; macro-RMSSE toàn bộ cao hơn pilot khoảng 0,006–0,007.
 
-**3. RMSSE khác WRMSSE thế nào?**
-RMSSE ở đây tính từng chuỗi: RMSE chia cho sai số naïve một bước (sau leading zeros, trên lịch sử
-huấn luyện), rồi lấy trung bình macro trên mẫu. WRMSSE của M5 gộp 42.840 chuỗi ở 12 mức phân cấp,
-có trọng số theo doanh thu 28 ngày cuối của Train. Hai số không so trực tiếp với bảng xếp hạng M5.
+**3. Vì sao horizon 28 ngày, lag ≥ 28 (28/35/42) và rolling shift 28?**
+Đúng kỳ dự báo của M5. LightGBM dự báo trực tiếp cả 28 ngày từ một origin, nên ngày xa nhất T+28 chỉ chắc chắn biết y đến T; lag nhỏ hơn 28 sẽ
+dùng nhãn chưa biết. `tests/test_no_leakage.py` làm hỏng mọi nhãn sau origin và kiểm tra đặc trưng, target không đổi.
 
-**4. R² âm / chuỗi hằng nghĩa là gì?**
-R² âm nghĩa là dự báo kém hơn việc dùng trung bình của nhãn đánh giá; hợp lệ, không bị ép về 0.
-Chuỗi nhãn hằng (SST = 0) không xác định R²; evaluator để NaN, ghi lý do và đếm số chuỗi bị bỏ
-(`n_r2_undefined`), không dùng epsilon.
+**4. RMSSE khác WRMSSE thế nào?**
+RMSSE tính từng chuỗi: RMSE chia cho sai số naïve một bước trên lịch sử Train (bỏ số 0 đầu), rồi lấy trung bình macro trên 30.490 chuỗi.
+WRMSSE cộng dự báo lên 12 cấp (42.840 chuỗi), trọng số theo doanh thu 28 ngày cuối trước origin, rồi lấy trung bình 12 cấp (`scripts/wrmsse.py`).
+Thứ hạng khác nhau: Croston SBA tốt ở cấp đáy nhưng WRMSSE Test 1,095 (kém nhất), LightGBM kém nhất cấp đáy nhưng WRMSSE 0,722.
 
-**5. Vì sao ETS và AICc?**
-AutoETS chọn trong họ ETS theo tiêu chí thông tin hiệu chỉnh cho mẫu hữu hạn, chu kỳ 7 để bắt mùa tuần.
-Kết quả chọn cấu trúc (error/trend/season) và α/β/γ nằm ở `diag_ets.csv`.
+**5. Điểm WRMSSE có so được với bảng xếp hạng M5 không?**
+Cửa sổ Test (d_1914–d_1941) trùng giai đoạn chấm public leaderboard của M5, nên cùng thước đo; nhưng điểm này không phải bài nộp thi và chỉ một cửa sổ.
+Kiểm tra cài đặt: Seasonal Naive cho 0,870, dự báo toàn 0 cho 5,447.
 
-**6. Croston: z và p?**
-z là ước lượng làm mượt của lượng bán khi có nhu cầu, p là ước lượng làm mượt khoảng cách giữa hai
-lần có nhu cầu; dự báo phẳng ŷ = z/p. Cài đặt tham chiếu trong `m5.univariate.croston_components`
-được kiểm tra khớp dự báo của statsforecast (smoothing 0,1).
+**6. Croston SBA khác Croston thế nào?**
+Croston làm mượt lượng bán z và khoảng cách p chỉ khi có nhu cầu, dự báo phẳng z/p. Syntetos–Boylan chỉ ra z/p bị chệch lên nên nhân (1 − α/2);
+với α = 0,1 hệ số là 0,95. Ở pilot SBA tốt hơn Croston ở cả Validation và Test.
 
-**7. Hệ số Linear Regression nói gì?**
-Hệ số của biến đã chuẩn hóa (điền thiếu bằng trung vị rồi chuẩn hóa, khớp trên dữ liệu huấn luyện trước ngày dự báo) cho thấy liên hệ
-điều kiện giữa đặc trưng và doanh số; biến phân loại one-hot bỏ nhóm gốc. Không phải tác động nhân quả.
+**7. Stacking lai hoạt động thế nào, có rò rỉ không?**
+ŷ = max(0, β0 + β1·ETS + β2·SBA + β3·LightGBM), β khớp bằng Ridge trên dự báo ngoài mẫu trong Train (fit đến mốc 1829 và 1857, dự báo 28 ngày
+kế tiếp, nhãn tới d_1885). Bộ gộp khớp một lần rồi áp nguyên cho Validation và Test, nên không dùng nhãn Validation/Test. Trọng số: ETS 0,543,
+LightGBM 0,371, SBA 0,138 (`diag_stacking_coefficients.csv`).
 
-**8. Boosting cộng cây như thế nào?**
-F_m(x) = F_{m-1}(x) + η f_m(x): mỗi cây mới học phần sai số còn lại của mô hình hiện tại. Sơ đồ minh họa
-khác với cây thật học được; importance thật nằm ở `diag_*_importance.csv`.
+**8. Mô hình nào tốt nhất?**
+Trên Test: stacking lai theo cả macro-RMSSE (0,757, nhỉnh hơn ETS 0,758) và WRMSSE (0,668). Trên Validation thứ tự đổi: ETS nhỉnh hơn stacking
+ở cấp đáy và LightGBM có WRMSSE thấp nhất (0,591). Kết luận vững: ETS và stacking tốt hơn Croston SBA và LightGBM ở cấp đáy khoảng 0,01–0,02.
 
-**9. Default so với Tuned?**
-Core dùng tham số mặc định thư viện (chỉ đặt seed/luồng/khai báo categorical). Optuna (30 lượt, chỉ nhãn Validation) cho
-macro-RMSSE Validation 0,7447 so với 0,7496 của Default; chênh lệch đo trên chính cửa sổ chọn nên hơi lạc quan. Trên Test (chạy 18/11/2026)
-Tuned đạt 0,7700, không hơn Default (0,7680; chênh +0,0020, khoảng tin cậy [−0,0009; +0,0054] chứa 0): lợi thế trên Validation biến mất.
+**9. Vì sao LightGBM kém ETS ở cấp đáy nhưng tốt hơn ở cấp tổng hợp?**
+Importance tập trung vào `rolling_mean_28` (68,5%) và `rolling_mean_7` (18,2%): dự báo là mức doanh số trượt điều chỉnh theo lịch, học chung mọi chuỗi.
+Cộng lại theo cửa hàng/bang, mức và chu kỳ tuần chung này rất chính xác (cấp 1: 0,610 trên Test). Ở từng chuỗi thưa, làm mượt riêng của ETS tốt hơn.
 
-**10. Giá tương lai?**
-Pipeline dùng giá tuần của ngày cần dự báo (bảng giá M5 công bố đến d_1969). Trong vận hành giá tương lai
-chỉ dùng được nếu được lên kế hoạch trước; đây là giả định phải nêu, không phải kết luận nhân quả về giá.
+**10. R² âm / chuỗi hằng nghĩa là gì?**
+R² âm nghĩa là dự báo kém hơn trung bình của chính nhãn đánh giá; với chuỗi thưa 28 ngày có phương sai nhỏ nên điều này phổ biến.
+812 chuỗi Test có nhãn hằng nên R² không xác định; evaluator để NaN, ghi lý do và đếm riêng, không dùng epsilon.
 
-**11. Vì sao chọn mẫu 1.200 chuỗi (seed 42, 40 × 30 tầng)?**
-Phân tầng store × category để giữ cấu trúc; thống kê đại diện chỉ dùng Train
-(`results/tables/d02_sample_representativeness.csv`). Mẫu không chọn lại sau khi thấy Test.
+**11. Chi phí tính toán?**
+Trên Kaggle 4 lõi: Seasonal Naive dưới 1 giây, Croston SBA khoảng 10 giây, LightGBM khoảng 4 phút (cộng gần 1 phút dựng 56 triệu dòng đặc trưng),
+ETS khoảng 2,5 giờ thực. Stacking tốn thêm khoảng 12 giây nhưng cần đủ ba mô hình cơ sở và hai backtest.
 
-**12. Local hay global?**
-Seasonal Naive/ETS/Croston là local (một mô hình mỗi chuỗi, chỉ dùng lịch sử chuỗi đó). Linear Regression,
-LightGBM, XGBoost, CatBoost là global (một mô hình cho cả mẫu, dùng thêm giá/lịch/SNAP/nhóm).
-Khác biệt input là một yếu tố gây nhiễu khi so thứ hạng; pilot LightGBM theo chuỗi (C03) không dùng để suy ra thời gian global.
+**12. Vì sao ETS cho dự báo âm?**
+ETS chọn toàn cấu trúc sai số cộng; với chuỗi thưa, mức cộng mùa vụ có thể âm. 16.474 điểm dự báo Test (1,9%) được cắt về 0, như mọi mô hình.
 
-**13. Stacking có rò rỉ không?**
-Chỉ hợp lệ khi dự báo đưa vào meta là ngoài mẫu của mô hình cơ sở. Không fit meta hay chọn alpha bằng Test;
-score trên chính tập huấn luyện meta không phải đánh giá độc lập. Trạng thái: trên Validation stacking đạt macro-RMSSE 0,7519 (kém LightGBM Tuned 0,7447 và ETS 0,7293, nhưng RMSE gộp thấp nhất 2,0251); trên Test (18/11/2026) macro-RMSSE 0,7689, ngang LightGBM (0,7680) và kém ETS (0,7520), RMSE gộp 1,928 thấp nhất trong các mô hình global nhưng cao hơn ETS (1,913).
+**13. Giá tương lai?**
+Pipeline dùng giá tuần của ngày cần dự báo (M5 công bố giá đến d_1969). Trong vận hành chỉ dùng được nếu giá được lên kế hoạch trước.
 
-**14. Vì sao mô hình thắng/thua?**
-Trên tập kiểm tra, ETS chính xác nhất (RMSSE trung bình 0,752). Croston gần bằng (0,764) nhưng chỉ chạy khoảng 1,4 giây, so với
-khoảng 1.026 giây của ETS; ba mô hình LightGBM, XGBoost, CatBoost ngang nhau (0,768).
-Với hàng bán chậm (trên 80% số ngày không bán), ETS và Croston (0,780 và 0,785) tốt hơn ba mô hình cây (0,804–0,806), nên với
-nhóm hàng này dùng mô hình làm mượt đơn giản là đủ và tốn ít tài nguyên hơn.
-Phần liên hệ tồn kho mới là gợi ý vì nhóm chưa đo chi phí tồn kho. Nguồn: `results/tables/test/test_overall.csv`, `test_by_demand_class.csv`.
+**14. Test có còn "mù" không?**
+Cấu hình được khóa bằng tag `config-freeze` (commit `c8ba5c8`) trước khi chạy Test toàn bộ, và Test chạy một lần. Tuy vậy nhãn Test của 1.200 chuỗi
+pilot (3,9% số chuỗi) đã được xem trước khi chọn năm mô hình; nhóm nêu rõ điều này trong phần giới hạn.
 
-**15. Smoke khác full reproduction thế nào?**
-Smoke chạy cùng pipeline trên tập nhỏ (F10: 12 chuỗi, 7 mô hình, 42 bài kiểm thử) để kiểm tra chạy được end-to-end; không tái lập
-các con số toàn mẫu và không dùng Test để phát triển.
+**15. Local hay global?**
+Seasonal Naive, ETS, Croston SBA là local (một mô hình mỗi chuỗi, chỉ dùng lịch sử chuỗi đó). LightGBM là global (một mô hình cho mọi chuỗi,
+dùng thêm giá/lịch/SNAP/nhóm). Stacking gộp cả hai. Khác biệt input là yếu tố gây nhiễu khi so thứ hạng.

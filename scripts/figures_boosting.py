@@ -41,11 +41,12 @@ def toy(out):
 
 def importance(runs, out):
     files = {"LightGBM": "diag_lightgbm_importance.csv", "XGBoost": "diag_xgboost_importance.csv", "CatBoost": "diag_catboost_importance.csv"}
-    fig, axes = plt.subplots(1, 3, figsize=(14, 4))
-    for ax, (name, f) in zip(axes, files.items()):
-        path = next((Path(r) / f for r in runs if (Path(r) / f).exists()), None)
-        if path is None:
-            raise FileNotFoundError(f"không run nào trong {list(runs)} có {f} (cần cho importance của {name})")
+    found = {name: next((Path(r) / f for r in runs if (Path(r) / f).exists()), None) for name, f in files.items()}
+    found = {k: v for k, v in found.items() if v is not None}  # full-data study: LightGBM only
+    if not found:
+        raise FileNotFoundError(f"không run nào trong {list(runs)} có tệp importance ({', '.join(files.values())})")
+    fig, axes = plt.subplots(1, len(found), figsize=(4.7 * len(found), 4), squeeze=False)
+    for ax, (name, path) in zip(axes[0], found.items()):
         d = pd.read_csv(path)
         d["share"] = d["importance"] / d["importance"].sum()
         d = d.sort_values("share").tail(10)

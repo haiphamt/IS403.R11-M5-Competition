@@ -1,6 +1,6 @@
 # Việc của nhóm sau khi AI bàn giao (chỉ người thật làm được)
 
-Trạng thái lúc bàn giao (15/11/2026): `main` @ `7e2543c`, 7 mô hình có Validation và Test thật. **Cập nhật lần cuối 18/11/2026:** `main` @ `7ab8149` (đã gộp PR #22, #25, #27; phần tùy chọn có kết quả Validation; đã có bản nháp handoff 7 mô hình). **18/11/2026 (sau đó):** Test phần tùy chọn đã chạy, các tag `config-freeze` và `config-freeze-v2` đã gỡ theo yêu cầu của nhóm (xem báo cáo mục 3.10 và giới hạn xiii). Những việc dưới đây AI **không** làm và **không** được đánh dấu Done thay nhóm. Phân công bám cột Owner/Reviewer trong checklist (tài khoản GitHub: Tuấn Hải = `haiphamt`, Tuấn Vũ = `Yuu2006`, Thanh Tiền = `tienlelttt`, Thủy Tiên = `NgKthy`, Thùy Trang = `ThorBietBay001`). Mọi đề xuất chia việc dưới đây là gợi ý của AI để nhóm chỉnh lại nếu cần.
+Trạng thái lúc bàn giao (15/11/2026): `main` @ `7e2543c`, 7 mô hình có Validation và Test thật. **Cập nhật lần cuối 18/11/2026:** `main` @ `7ab8149` (đã gộp PR #22, #25, #27; phần tùy chọn có kết quả Validation; đã có bản nháp handoff 7 mô hình). **18/11/2026 (chiều): nghiên cứu chính chuyển sang toàn bộ 30.490 chuỗi với 5 mô hình** (Seasonal Naive, ETS, LightGBM, Croston SBA, stacking lai ETS + SBA + LightGBM), chạy trên Kaggle, kết quả ở `results/full/`; báo cáo, slide, Q&A và README đã viết lại; Linear Regression, Croston cổ điển, XGBoost, CatBoost, LightGBM Tuned và bỏ giá/sự kiện chỉ còn trong pilot 1.200 chuỗi. Chủ mô hình của các mô hình bị bỏ (Thanh Tiền với XGBoost/CatBoost, Thùy Trang với Linear Regression) cần thống nhất lại phần việc: gợi ý Thanh Tiền phụ trách WRMSSE và phân tích theo nhóm, Thùy Trang phụ trách stacking lai. **18/11/2026 (sau đó):** Test phần tùy chọn đã chạy, các tag `config-freeze` và `config-freeze-v2` đã gỡ theo yêu cầu của nhóm (xem báo cáo mục 3.10 và giới hạn xiii). Những việc dưới đây AI **không** làm và **không** được đánh dấu Done thay nhóm. Phân công bám cột Owner/Reviewer trong checklist (tài khoản GitHub: Tuấn Hải = `haiphamt`, Tuấn Vũ = `Yuu2006`, Thanh Tiền = `tienlelttt`, Thủy Tiên = `NgKthy`, Thùy Trang = `ThorBietBay001`). Mọi đề xuất chia việc dưới đây là gợi ý của AI để nhóm chỉnh lại nếu cần.
 
 ## 1. Review và approve các PR
 
@@ -36,17 +36,15 @@ Cần dữ liệu M5 trong `data/raw/` (hoặc `--data-dir`). Kết quả tập 
 
 ## 3. Xem slide bằng PowerPoint
 
-AI mới kiểm tra cấu trúc `report/slides/m5_nhom6.pptx` (17 slide, không shape nào vượt khung, đủ ghi chú; slide 14 mới: phần tùy chọn, các slide sau đó dịch lên một), **chưa xem hình ảnh**. Mỗi người mở file, xem slide của mình xem chữ có tràn, bảng có vừa, hình có đọc được không, rồi báo lỗi (hoặc sửa và gửi PR):
+**Bộ slide đã dựng lại ngày 18/11/2026 cho nghiên cứu toàn bộ dữ liệu (5 mô hình), nên các lượt xem trước đây không còn áp dụng.** AI mới kiểm tra cấu trúc `report/slides/m5_nhom6.pptx` (17 slide, không shape nào vượt khung, đủ ghi chú), **chưa xem hình ảnh**. Mỗi người mở file, xem slide của mình (chữ có tràn, bảng có vừa, hình có đọc được không), rồi báo lỗi hoặc sửa và gửi PR. Phân công theo ghi chú người nói trong từng slide:
 
 | Người | Slide |
 |---|---|
-| Tuấn Hải | 1, 2, 4, 6 (Seasonal Naive), 13, 16, 17 |
-| Tuấn Vũ | 6 (ETS/Croston), 8 |
-| Thanh Tiền | 3, 7 (XGBoost/CatBoost), 11, 12 |
+| Tuấn Hải | 1, 2, 4, 6 (Seasonal Naive), 14, 16 |
+| Tuấn Vũ | 6 (ETS, Croston SBA), 8 |
+| Thanh Tiền | 3, 4, 11 (WRMSSE), 12, 13 (không còn XGBoost/CatBoost, nên phụ trách phần WRMSSE và phân tích theo nhóm) |
 | Thủy Tiên | 7 (LightGBM), 9, 10, 14, 15 |
-| Thùy Trang | 5, 7 (Linear Regression) |
-
-*Cập nhật 18/11/2026:* Tuấn Hải đã xem các slide 1, 2, 3, 4, 6, 13, 15, 16 theo số cũ (16 slide; nay là 1, 2, 3, 4, 6, 13, 16, 17 vì thêm slide 14) (các slide còn lại do người khác xem); hình ở slide 13 đã được tách nhãn ở PR #28, cần xem lại.
+| Thùy Trang | 5, 7 (stacking lai) |
 
 Thời lượng seminar chính thức **chưa được xác minh**: cần hỏi giảng viên để cắt bớt slide cho vừa giờ.
 

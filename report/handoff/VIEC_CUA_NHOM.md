@@ -14,7 +14,7 @@ Tất cả PR #4–#20 đều do tài khoản `NgKthy` tạo và merge; GitHub k
 | Thùy Trang | #15, #17, #20 | #15: khung slide (P01) và hình; #17: bản thảo mà Thùy Trang là người ghép (W09) |
 | Thủy Tiên | không gán được trên GitHub (là người tạo PR) | Review theo kế hoạch D04/M03 (#6), M01/M02 (#5), M04–M06, F02/F04/F07 (#11, #16, #8): đọc diff, ghi nhận xét bằng comment trên PR hoặc gửi cho người được gán để họ approve thay; ghi rõ ai review gì vào mục 10 README |
 
-PR #4 và #6 chưa có reviewer: cần người nhóm vào xem (gợi ý: Tuấn Hải xem #4, Thùy Trang xem #6).
+PR #4 và #6 chưa có reviewer: cần người nhóm vào xem (gợi ý: Tuấn Hải xem #4; Thanh Tiền hoặc Tuấn Vũ xem #6, vì D04/M03 là phần của Thùy Trang nên không nhờ Thùy Trang).
 
 *Cập nhật 18/11/2026:* Tuấn Hải đã để nhận xét rà soát (có hỗ trợ tự động) ở #4, #5, #9, #15, #16, #17, #19, #20; Thùy Trang đã review #15, #17, #20, #21; sửa theo các nhận xét này ở PR #28. Các nhận xét của Tuấn Hải nhắc tới PR #29 (Tóm tắt/Kết luận) và #30 (D03, P05, M09) chưa gộp vào `main` tại thời điểm này.
 

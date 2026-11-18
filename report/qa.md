@@ -41,8 +41,8 @@ khác với cây thật học được; importance thật nằm ở `diag_*_impo
 
 **9. Default so với Tuned?**
 Core dùng tham số mặc định thư viện (chỉ đặt seed/luồng/khai báo categorical). Optuna (30 lượt, chỉ nhãn Validation) cho
-macro-RMSSE Validation 0,7447 so với 0,7496 của Default; chênh lệch đo trên chính cửa sổ chọn nên hơi lạc quan. Test của
-bản Tuned chưa chạy (chờ tag `config-freeze-v2`).
+macro-RMSSE Validation 0,7447 so với 0,7496 của Default; chênh lệch đo trên chính cửa sổ chọn nên hơi lạc quan. Trên Test (chạy 18/11/2026)
+Tuned đạt 0,7700, không hơn Default (0,7680; chênh +0,0020, khoảng tin cậy [−0,0009; +0,0054] chứa 0): lợi thế trên Validation biến mất.
 
 **10. Giá tương lai?**
 Pipeline dùng giá tuần của ngày cần dự báo (bảng giá M5 công bố đến d_1969). Trong vận hành giá tương lai
@@ -59,7 +59,7 @@ Khác biệt input là một yếu tố gây nhiễu khi so thứ hạng; pilot 
 
 **13. Stacking có rò rỉ không?**
 Chỉ hợp lệ khi dự báo đưa vào meta là ngoài mẫu của mô hình cơ sở. Không fit meta hay chọn alpha bằng Test;
-score trên chính tập huấn luyện meta không phải đánh giá độc lập. Trạng thái: mã và kiểm thử đã có; trên Validation stacking đạt macro-RMSSE 0,7519 (kém LightGBM Tuned 0,7447 và ETS 0,7293, nhưng RMSE gộp thấp nhất 2,0251); Test chưa chạy.
+score trên chính tập huấn luyện meta không phải đánh giá độc lập. Trạng thái: trên Validation stacking đạt macro-RMSSE 0,7519 (kém LightGBM Tuned 0,7447 và ETS 0,7293, nhưng RMSE gộp thấp nhất 2,0251); trên Test (18/11/2026) macro-RMSSE 0,7689, ngang LightGBM (0,7680) và kém ETS (0,7520), RMSE gộp 1,928 thấp nhất trong các mô hình global nhưng cao hơn ETS (1,913).
 
 **14. Vì sao mô hình thắng/thua?**
 Trên tập kiểm tra, ETS chính xác nhất (RMSSE trung bình 0,752). Croston gần bằng (0,764) nhưng chỉ chạy khoảng 1,4 giây, so với

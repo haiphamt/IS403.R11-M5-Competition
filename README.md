@@ -14,7 +14,7 @@ theo ngày cho từng sản phẩm tại từng cửa hàng trong **28 ngày ti�
 - Phần tùy chọn (T01 Optuna, T02 Stacking, X01 Croston SBA, X02 ablation LightGBM): mã nguồn đã có (PR #24);
   **Validation** của T01, X01, X02 đã chạy (`results/tuning/`, `results/runs/val-20261116T015146Z-2ee03bd`);
   Stacking cũng đã chạy trên Validation (macro-RMSSE 0,7519, kém LightGBM Tuned 0,7447 nhưng RMSE gộp thấp nhất; dự báo ngoài mẫu ở `results/oof/`);
-  **Test của phần tùy chọn chưa chạy** (cần tag `config-freeze-v2`, chưa tạo).
+  **Test của phần tùy chọn đã chạy ngày 18/11/2026** (`results/runs/tes-20261118T033447Z-5fac4bf`, `tes-20261118T034102Z-5fac4bf-stack`; máy cục bộ 8 luồng, nên thời gian không so được với Kaggle). Các tag `config-freeze` và `config-freeze-v2` đã gỡ theo yêu cầu của nhóm để còn chạy/sửa tiếp: khi chưa có tag, split `test` bị khóa; muốn chạy lại Test phải tạo lại tag.
 - Độ đo theo checklist: **MAE, RMSE, RMSSE, R²**, kèm thời gian chạy.
   Phạm vi này được phân biệt với WRMSSE của cuộc thi M5 gốc.
 
@@ -34,6 +34,10 @@ Thời gian: mô hình cục bộ là tổng thời gian huấn luyện và dự
 huấn luyện và dự báo trên toàn mẫu (CPU 4 lõi trên Kaggle), không so trực tiếp. Chênh lệch giữa nhóm đầu rất nhỏ và chỉ dựa
 trên một cửa sổ 28 ngày. Về chi phí chạy, Croston đạt RMSSE trung bình 0,764 trong khoảng 1,4 giây, gần bằng ETS (0,752)
 nhưng nhanh hơn khoảng 750 lần (1.026,2 giây so với 1,4 giây); với hàng bán không đều, đây là lựa chọn nên thử trước các mô hình cây.
+
+Phần tùy chọn trên Test (macro-RMSSE; chạy 18/11/2026, máy cục bộ, sau khi nhãn Test lõi đã mở): Croston SBA 0,762, LightGBM bỏ giá/sự kiện 0,766,
+stacking 0,769, LightGBM Tuned 0,770 (không hơn LightGBM mặc định 0,768; lợi thế trên Validation biến mất). Không mô hình tùy chọn nào vượt ETS (0,752);
+chi tiết và khoảng tin cậy ở báo cáo mục 3.10 (Bảng 3d, 3e).
 
 - Báo cáo: [`report/draft_report.md`](report/draft_report.md); slide: `report/slides/m5_nhom6.pptx`; hỏi đáp: `report/qa.md`.
 - Dự báo và metrics theo `run_id`: `results/runs/`; bảng/hình: `results/tables/{validation,test}/`, `results/figures/`.
@@ -356,7 +360,7 @@ python scripts/run_experiment.py --split test             # origin d_1913, refit
 
 ### Phần tùy chọn (T01, T02, X01, X02)
 
-Thứ tự chạy (Validation trước, Test sau và chỉ sau khi có tag `config-freeze-v2`). Các notebook clone nhánh `m5-end-to-end`, nên
+Thứ tự chạy (Validation trước, Test sau và chỉ sau khi có tag `config-freeze-v2`; tag này hiện đã gỡ, xem trên). Các notebook clone nhánh `m5-end-to-end`, nên
 PR chứa `configs/models/lightgbm_tuned.json` (PR #25) phải được merge vào nhánh này trước khi chạy `05_m5_optional_test.ipynb`.
 
 1. `notebooks/04_m5_optional_validation.ipynb` (Kaggle): Optuna, Croston SBA, ablation, dự báo ngoài mẫu (OOF) của LR/LightGBM/XGBoost;

@@ -93,7 +93,7 @@ def main():
            "Khác biệt: RMSSE/MAE trên mẫu 1.200 chuỗi, không phải WRMSSE"])
     slide("Dữ liệu, mẫu và chia thời gian", "Tuấn Hải (D03), Thanh Tiền (D02/D07).",
           ["Mẫu: 10 cửa hàng × 3 category × 40 chuỗi, seed 42", "Train d_1–1885, Validation d_1886–1913, Test d_1914–1941",
-           "Test mở sau tag config-freeze; refit trên d_1–1913", "Không chọn lại mẫu sau khi thấy kết quả"],
+           "Test mở sau khóa cấu hình (tag config-freeze, đã gỡ 18/11); refit trên d_1–1913", "Không chọn lại mẫu sau khi thấy kết quả"],
           table=pd.DataFrame({"Chỉ tiêu": ["Chuỗi", "Tỷ lệ ngày 0", "Doanh số TB"],
                               **{k: [f"{int(rep_.loc['n_series', c]):,}".replace(",", "."), num(f"{rep_.loc['zero_ratio', c]:.3f}"), num(f"{rep_.loc['mean_sales', c]:.3f}")]
                                  for k, c in (("Toàn bộ", "all"), ("Mẫu", "sample"))}}))
@@ -117,7 +117,7 @@ def main():
     d = test.reset_index()[["model", "macro_mae", "macro_rmse", "macro_rmsse", "macro_r2", "fit_predict_s"]]
     d["model"] = d["model"].map(LABEL)
     d.columns = ["Mô hình", "MAE", "RMSE", "RMSSE", "R²", "fit+predict (s)"]
-    slide("Kết quả Test (d_1914–1941)", "Thủy Tiên: Test chạy một lần sau config-freeze; refit d_1–1913.", table=d,
+    slide("Kết quả Test (d_1914–1941)", "Thủy Tiên: Test của 7 mô hình lõi chạy một lần sau config-freeze (tag đã gỡ 18/11); refit d_1–1913.", table=d,
           caption="Nguồn: results/tables/test/test_overall.csv; cùng mẫu, cùng chính sách metric.")
     cls = pd.read_csv(T / "test" / "test_by_demand_class.csv").pivot(index="demand_class", columns="model", values="rmsse")
     c = lambda x: f"{x:.3f}".replace(".", ",")
@@ -132,9 +132,21 @@ def main():
                    "Cả bảy mô hình đều cao hơn vào cuối tuần (xem test_mae_by_weekday.csv)"])
     slide("Đánh đổi độ chính xác và thời gian", "Tuấn Hải/Thủy Tiên: không so trực tiếp runtime local và global.", image=F / "test" / "test_accuracy_runtime.png",
           bullets=["Thời gian: local = tổng fit+predict từng chuỗi; global = fit toàn mẫu", f"{slowest} mặc định chậm nhất trên CPU 4 lõi"])
+    ov = {sp: pd.concat([pd.read_csv(r / "metrics_summary.csv") for r in sorted((ROOT / "results" / "runs").glob(f"{sp}-*"))]).set_index("model")["macro_rmsse"] for sp in ("val", "tes")}
+    names = ["ets", "croston", "croston_sba", "lightgbm", "lightgbm_noprice", "lightgbm_tuned", "stacking"]
+    opt_lab = {**LABEL, "croston_sba": "Croston SBA", "lightgbm_noprice": "LightGBM bỏ giá/sự kiện", "lightgbm_tuned": "LightGBM Tuned", "stacking": "Stacking Ridge"}
+    pr = {sp: pd.read_csv(T / sp / f"{sp}_bootstrap_optional_pairs.csv").set_index(["first", "second"])["diff"] for sp in ("validation", "test")}
+    sg = lambda x: num(f"{x:+.4f}")
+    slide("Phần tùy chọn: kết quả Validation và Test", "Thủy Tiên (T01, X02), Tuấn Vũ (X01), Thùy Trang (T02): Test chạy 18/11/2026 sau tag config-freeze-v2 (đã gỡ), máy cục bộ; nhãn Test lõi đã mở trước nên không còn là dữ liệu giữ lại hoàn toàn.",
+          [f"Tuned hơn Default trên Validation ({sg(pr['validation'][('lightgbm_tuned', 'lightgbm')])}) nhưng không hơn trên Test ({sg(pr['test'][('lightgbm_tuned', 'lightgbm')])})",
+           f"SBA tốt hơn Croston ở cả hai tập ({sg(pr['validation'][('croston_sba', 'croston')])}; {sg(pr['test'][('croston_sba', 'croston')])})",
+           f"Bỏ giá/sự kiện không làm xấu ({sg(pr['test'][('lightgbm_noprice', 'lightgbm')])} trên Test, khoảng tin cậy chạm 0)",
+           f"Stacking ngang LightGBM ({sg(pr['test'][('stacking', 'lightgbm')])}); không mô hình nào vượt ETS"],
+          table=pd.DataFrame({"Mô hình": [opt_lab[m] for m in names], "RMSSE Val": [ov["val"][m] for m in names], "RMSSE Test": [ov["tes"][m] for m in names]}),
+          caption="Nguồn: results/runs/*/metrics_summary.csv, results/tables/*/*_bootstrap_optional_pairs.csv; chênh lệch là macro-RMSSE cặp (âm = mô hình đầu tốt hơn).")
     slide("Insight và giới hạn", "Thủy Tiên: kết luận gắn với bảng/hình; nêu giới hạn.",
           ["Một cửa sổ Test 28 ngày; mẫu 1.200 chuỗi", "Khác biệt input giữa local và global gây nhiễu thứ hạng", "Giả định giá tương lai; importance không phải nhân quả",
-           "Phần tùy chọn: mới có Validation (Optuna, SBA, ablation, stacking); Test chưa chạy", "Smoke ≠ tái lập toàn bộ"])
+           "Phần tùy chọn: Test chạy sau khi nhãn Test lõi đã mở, không còn là dữ liệu giữ lại hoàn toàn; tag khóa đã gỡ", "Smoke ≠ tái lập toàn bộ"])
     slide("Kết luận và hướng phát triển", "Tuấn Hải (W08/P05).",
           [f"Mô hình tốt nhất trên Test theo macro-RMSSE: {LABEL[best_t]}", "Mọi mô hình cải thiện rõ so với Seasonal Naive (xem bảng)", "Hướng: rolling-origin nhiều mùa, WRMSSE phân cấp, mô phỏng tồn kho, dự báo xác suất"])
     slide("Q&A", "Cả nhóm: xem report/qa.md.", ["Câu hỏi dự kiến: horizon 28, lag ≥ 28, RMSSE vs WRMSSE, R² âm, AICc, Croston z/p, hệ số LR, boosting cộng cây, giá tương lai, local/global"])

@@ -1,0 +1,38 @@
+{
+  "run_id": "tes-20261118T034102Z-5fac4bf-stack",
+  "split": "test",
+  "origin_day": 1913,
+  "git_sha": "5fac4bf52a662dc263e3f3a3b80f999cb24c5874",
+  "utc": "2026-11-18T03:41:44.279097+00:00",
+  "models": [
+    "stacking"
+  ],
+  "meta": {
+    "alpha": 1000.0,
+    "cv_rmse_leave_one_origin_out": {
+      "0.1": 2.233125436346813,
+      "1.0": 2.2331218886290123,
+      "10.0": 2.2330864754973114,
+      "100.0": 2.232738632102408,
+      "1000.0": 2.229790764418005
+    },
+    "lgbm_in_stack": "tuned",
+    "bases": [
+      "linear_regression",
+      "lightgbm",
+      "xgboost",
+      "catboost"
+    ],
+    "oof_files": [
+      "oof_catboost.parquet",
+      "oof_linear_regression_lightgbm_lightgbm_tuned_xgboost.parquet"
+    ],
+    "oof_rows": 67200,
+    "base_runs": [
+      "tes-20261115T090359Z-4cc19f7",
+      "tes-20261115T095405Z-4994dda",
+      "tes-20261118T033447Z-5fac4bf"
+    ]
+  },
+  "postprocessing": "clip y_pred at 0; no rounding"
+}

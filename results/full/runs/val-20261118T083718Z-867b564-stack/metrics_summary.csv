@@ -1,0 +1,2 @@
+run_id,model,n_series,macro_mae,macro_rmse,macro_rmsse,macro_r2,pooled_mae,pooled_rmse,n_rmsse_undefined,n_r2_undefined,fit_predict_s
+val-20261118T083718Z-867b564-stack,stacking,30490,1.045997560793457,1.3324310065124672,0.7379045172671028,-0.24304420133118768,1.0459975607934573,2.1622741310177807,0,1587,15.21584659999644

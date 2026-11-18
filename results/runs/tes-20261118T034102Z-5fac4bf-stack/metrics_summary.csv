@@ -1,0 +1,2 @@
+run_id,model,n_series,macro_mae,macro_rmse,macro_rmsse,macro_r2,pooled_mae,pooled_rmse,n_rmsse_undefined,n_r2_undefined,fit_predict_s
+tes-20261118T034102Z-5fac4bf-stack,stacking,1200,0.9900371452973049,1.2631272478480786,0.7688752030971412,-0.20275274974510826,0.9900371452973048,1.9280649622609087,0,37,9.75995469999907

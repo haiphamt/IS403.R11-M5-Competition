@@ -19,8 +19,8 @@ class TestAnalyzeHelpers(unittest.TestCase):
         self.m = load_module()
 
     def test_order_keeps_core_order_then_sorts_unknown_models(self):
-        got = self.m.order(["xgboost", "stacking", "ets", "croston_sba", "seasonal_naive"])
-        self.assertEqual(got, ["seasonal_naive", "ets", "xgboost", "croston_sba", "stacking"])
+        got = self.m.order(["xgboost", "zz_new", "stacking", "ets", "croston_sba", "seasonal_naive", "aa_new"])
+        self.assertEqual(got, ["seasonal_naive", "ets", "croston_sba", "xgboost", "stacking", "aa_new", "zz_new"])
 
     def test_win_and_tie_rates_on_toy_data(self):
         mae = pd.DataFrame({"seasonal_naive": [1.0, 1.0, 1.0, 1.0], "ets": [0.5, 1.0, 2.0, 0.9], "new_model": [0.1, 0.2, 0.3, 0.4]})

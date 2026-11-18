@@ -24,7 +24,7 @@ from m5.data import load_raw_data  # noqa: E402
 from m5.schema import SPLITS  # noqa: E402
 from m5.split import to_wide  # noqa: E402
 
-ORDER = ["seasonal_naive", "linear_regression", "ets", "croston", "lightgbm", "xgboost", "catboost"]
+ORDER = ["seasonal_naive", "linear_regression", "ets", "croston", "croston_sba", "lightgbm", "xgboost", "catboost", "stacking"]  # tables keep the models present, in this order
 LABEL = {"seasonal_naive": "Seasonal Naive", "linear_regression": "Linear Regression", "ets": "ETS",
          "croston": "Croston", "lightgbm": "LightGBM", "xgboost": "XGBoost", "catboost": "CatBoost",
          "croston_sba": "Croston SBA", "lightgbm_noprice": "LightGBM bỏ giá/sự kiện",
@@ -33,19 +33,20 @@ LABEL = {"seasonal_naive": "Seasonal Naive", "linear_regression": "Linear Regres
 
 # label offsets (points) so the near-equal cluster LightGBM / XGBoost / Linear Regression stays readable; others default above
 LABEL_OFFSET = {"lightgbm": (-8, 9, "right"), "xgboost": (0, -15, "center"), "linear_regression": (8, 9, "left"),
-                "croston": (0, -15, "center"), "ets": (0, -15, "center"), "catboost": (0, 9, "right")}
+                "croston": (0, -15, "center"), "ets": (0, -15, "center"), "catboost": (0, 9, "right"),
+                "stacking": (-8, 9, "right")}
 
 
 def tradeoff_figure(rt, tag):
     """RMSSE versus fit+predict time (rt: model, fit_predict_s, macro_rmsse)."""
     fig, ax = plt.subplots(figsize=(7, 4.5))
     for _, r in rt.iterrows():
-        x = max(r["fit_predict_s"], 1e-3)
+        x = max(r.get("fit_predict_incl_bases_s", r["fit_predict_s"]), 1e-3)
         dx, dy, ha = LABEL_OFFSET.get(r["model"], (0, 9, "center"))
         ax.scatter(x, r["macro_rmsse"])
         ax.annotate(LABEL.get(r["model"], r["model"]), (x, r["macro_rmsse"]), xytext=(dx, dy), textcoords="offset points", ha=ha, fontsize=8)
     ax.set_xscale("log")
-    ax.set_xlabel("fit+predict (giây, thang log; không cùng phạm vi giữa mô hình cục bộ/global)")
+    ax.set_xlabel("fit+predict (giây, thang log; local/global khác phạm vi; stacking gồm cả 3 mô hình cơ sở)" if "fit_predict_incl_bases_s" in rt else "fit+predict (giây, thang log; không cùng phạm vi giữa mô hình cục bộ/global)")
     ax.set_ylabel("RMSSE macro")
     ax.set_title(f"Độ chính xác và thời gian — {tag}")
     ax.margins(x=0.12, y=0.12)
@@ -139,6 +140,10 @@ def main():
                      "scope": t.get("scope", ""), "run_id": t.get("run_id", ""),
                      "macro_rmsse": float(overall.loc[m, "macro_rmsse"]), "macro_mae": float(overall.loc[m, "macro_mae"])})
     rt = pd.DataFrame(rows)
+    bases = [m for m in ("ets", "croston_sba", "lightgbm") if m in set(rt["model"])]
+    if "stacking" in set(rt["model"]) and len(bases) == 3:  # the hybrid stack needs its three base forecasts: plot its full cost
+        rt["fit_predict_incl_bases_s"] = rt["fit_predict_s"]
+        rt.loc[rt["model"] == "stacking", "fit_predict_incl_bases_s"] += rt.loc[rt["model"].isin(bases), "fit_predict_s"].sum()
     rt.round(3).to_csv(a.tables / f"{tag}_runtime_tradeoff.csv", index=False)
     fig = tradeoff_figure(rt, tag)
     savefig(fig, a.figures / f"{tag}_accuracy_runtime.png")

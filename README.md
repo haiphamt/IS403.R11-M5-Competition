@@ -6,40 +6,38 @@ theo ngày cho từng sản phẩm tại từng cửa hàng trong **28 ngày ti�
 
 ## Phạm vi thực nghiệm
 
-- Dữ liệu: M5 Forecasting – Accuracy của Walmart.
-- Mẫu chính thức: **1.200 chuỗi**, chọn theo cửa hàng và ngành hàng, seed **42**
-  (cấu hình đã khóa tại tag `config-freeze`, xem `configs/freeze.yaml`).
-- Mô hình lõi: Seasonal Naive, Linear Regression, ETS, Croston,
-  LightGBM Default, XGBoost và CatBoost.
-- Phần tùy chọn (T01 Optuna, T02 Stacking, X01 Croston SBA, X02 ablation LightGBM): mã nguồn đã có (PR #24);
-  **Validation** của T01, X01, X02 đã chạy (`results/tuning/`, `results/runs/val-20261116T015146Z-2ee03bd`);
-  Stacking cũng đã chạy trên Validation (macro-RMSSE 0,7519, kém LightGBM Tuned 0,7447 nhưng RMSE gộp thấp nhất; dự báo ngoài mẫu ở `results/oof/`);
-  **Test của phần tùy chọn chưa chạy** (cần tag `config-freeze-v2`, chưa tạo).
-- Độ đo theo checklist: **MAE, RMSE, RMSSE, R²**, kèm thời gian chạy.
-  Phạm vi này được phân biệt với WRMSSE của cuộc thi M5 gốc.
+- Dữ liệu: M5 Forecasting – Accuracy của Walmart; nghiên cứu chính dùng **toàn bộ 30.490 chuỗi** sản phẩm–cửa hàng
+  (`data/full_series_ids_with_class.csv`), horizon 28 ngày.
+- **5 mô hình**: 3 mô hình lõi (Seasonal Naive làm mốc, ETS, LightGBM mặc định) và 2 mô hình mới (Croston SBA,
+  stacking lai Ridge gộp ETS + Croston SBA + LightGBM, khớp trên dự báo ngoài mẫu trong Train ở mốc 1829 và 1857).
+- Năm mô hình được chọn từ **pilot** trên mẫu 1.200 chuỗi (seed 42) với 11 mô hình (7 lõi + Optuna, stacking cũ, Croston SBA, bỏ giá/sự kiện);
+  kết quả pilot giữ nguyên ở `results/runs/`, `results/tables/` và Bảng P1 của báo cáo.
+- Độ đo: **MAE, RMSE, RMSSE, R²**, thời gian chạy và **WRMSSE 12 cấp** như M5 (`scripts/wrmsse.py`).
+- Cấu hình khóa bằng tag `config-freeze` (tạo lại ngày 18/11/2026 tại commit `c8ba5c8` cho nghiên cứu toàn bộ dữ liệu; xem `configs/freeze.yaml`, khối `full_data_v3`).
 
-## Kết quả chính (Test d_1914–d_1941, 1.200 chuỗi, chạy một lần sau `config-freeze`)
+## Kết quả chính (Test d_1914–d_1941, 30.490 chuỗi, chạy một lần sau `config-freeze`)
 
-| Mô hình | RMSSE (macro) | MAE (macro) | fit+predict (s) |
-| --- | ---: | ---: | ---: |
-| Seasonal Naive | 0,997 | 1,157 | 0,0 |
-| Linear Regression | 0,776 | 0,980 | 25,2 |
-| ETS | 0,752 | 0,953 | 1026,2 |
-| Croston | 0,764 | 0,986 | 1,4 |
-| LightGBM | 0,768 | 0,984 | 9,7 |
-| XGBoost | 0,768 | 0,987 | 15,7 |
-| CatBoost | 0,768 | 0,984 | 2080,3 |
+| Mô hình | RMSSE (macro) | WRMSSE | MAE (macro) | fit+predict (s) |
+| --- | ---: | ---: | ---: | ---: |
+| Seasonal Naive | 0,997 | 0,870 | 1,244 | 0,7 |
+| ETS | 0,758 | 0,760 | 1,040 | 35.121 |
+| Croston SBA | 0,769 | 1,095 | 1,075 | 10,5 |
+| LightGBM | 0,775 | 0,722 | 1,079 | 228,4 |
+| Stacking lai | **0,757** | **0,668** | 1,050 | 12,1 (+ ba mô hình cơ sở) |
 
-Thời gian: mô hình cục bộ là tổng thời gian huấn luyện và dự báo của từng chuỗi (3 tiến trình), mô hình toàn cục là thời gian
-huấn luyện và dự báo trên toàn mẫu (CPU 4 lõi trên Kaggle), không so trực tiếp. Chênh lệch giữa nhóm đầu rất nhỏ và chỉ dựa
-trên một cửa sổ 28 ngày. Về chi phí chạy, Croston đạt RMSSE trung bình 0,764 trong khoảng 1,4 giây, gần bằng ETS (0,752)
-nhưng nhanh hơn khoảng 750 lần (1.026,2 giây so với 1,4 giây); với hàng bán không đều, đây là lựa chọn nên thử trước các mô hình cây.
+Thời gian: mô hình cục bộ là tổng thời gian huấn luyện và dự báo từng chuỗi (4 tiến trình trên Kaggle; ETS khoảng 2,5 giờ thực),
+LightGBM là thời gian trên toàn bộ dữ liệu với 4 luồng, stacking chỉ tính bước khớp bộ gộp. Stacking lai tốt nhất trên Test theo cả hai độ đo,
+nhưng chênh lệch với ETS ở cấp đáy rất nhỏ và đổi chiều trên Validation (ETS 0,737, stacking 0,738; LightGBM có WRMSSE Validation thấp nhất, 0,591).
+Croston SBA tốt ở cấp sản phẩm–cửa hàng nhưng kém nhất ở các cấp tổng hợp vì dự báo phẳng không có chu kỳ tuần.
+Về chi phí chạy, Croston SBA đạt macro-RMSSE 0,769 trong khoảng 10,5 giây CPU, gần ETS (0,758) nhưng ít hơn khoảng 3.350 lần
+(35.121 giây so với 10,5 giây tổng CPU); với hàng bán không đều ở cấp từng chuỗi, đây là lựa chọn nên thử trước.
 
 - Báo cáo: [`report/draft_report.md`](report/draft_report.md); slide: `report/slides/m5_nhom6.pptx`; hỏi đáp: `report/qa.md`.
-- Dự báo và metrics theo `run_id`: `results/runs/`; bảng/hình: `results/tables/{validation,test}/`, `results/figures/`.
-- Smoke reproduction: `results/tables/f10_smoke_reproduction.md` (tập con, không phải tái lập toàn bộ).
-- Giới hạn: một cửa sổ Test, mẫu 1.200 chuỗi, giả định giá tương lai, khác biệt input giữa mô hình cục bộ và global,
-  chưa đo chi phí tồn kho. Bản thảo và slide do AI soạn từ kết quả thật; chưa có thành viên nào review.
+- Nghiên cứu chính: dự báo và metrics theo `run_id` ở `results/full/runs/`, backtest ở `results/full/oof/`, bảng/hình ở
+  `results/full/tables/{validation,test}/`, `results/full/figures/`.
+- Pilot 1.200 chuỗi: `results/runs/`, `results/tables/`, `results/figures/`.
+- Giới hạn: một cửa sổ Test, giả định giá tương lai, khác biệt input giữa mô hình cục bộ và global, nhãn Test của 1.200 chuỗi pilot
+  đã được xem trước khi chọn mô hình, chưa đo chi phí tồn kho. Bản thảo và slide do AI soạn từ kết quả thật; bản toàn bộ dữ liệu chưa được review.
 
 ## Cấu trúc thư mục
 
@@ -54,8 +52,9 @@ nhưng nhanh hơn khoảng 750 lần (1.026,2 giây so với 1,4 giây); với h
 ├── data/
 │   ├── raw/            # Dữ liệu gốc, không đưa lên Git
 │   ├── processed/      # Dữ liệu Parquet, không đưa lên Git
-│   └── sample_series_ids.csv  # Danh sách 1.200 chuỗi của mẫu chính thức
-├── notebooks/          # Notebook Colab/Kaggle: 02/03 (lõi), 04/05 (tùy chọn), EDA
+│   ├── sample_series_ids.csv  # 1.200 chuỗi của mẫu pilot
+│   └── full_series_ids_with_class.csv  # 30.490 chuỗi kèm nhóm nhu cầu (nghiên cứu chính)
+├── notebooks/          # Notebook Colab/Kaggle: 02/03 (lõi, pilot), 04/05 (tùy chọn, pilot), 06a–06d (toàn bộ dữ liệu), EDA
 ├── paper/              # Tóm tắt bài báo: summary.md (S04)
 ├── report/
 │   ├── draft_report.md # Bản thảo báo cáo
@@ -356,7 +355,7 @@ python scripts/run_experiment.py --split test             # origin d_1913, refit
 
 ### Phần tùy chọn (T01, T02, X01, X02)
 
-Thứ tự chạy (Validation trước, Test sau và chỉ sau khi có tag `config-freeze-v2`). Các notebook clone nhánh `m5-end-to-end`, nên
+Thứ tự chạy (Validation trước, Test sau và chỉ sau khi có tag `config-freeze-v2`; tag này hiện đã gỡ, xem trên). Các notebook clone nhánh `m5-end-to-end`, nên
 PR chứa `configs/models/lightgbm_tuned.json` (PR #25) phải được merge vào nhánh này trước khi chạy `05_m5_optional_test.ipynb`.
 
 1. `notebooks/04_m5_optional_validation.ipynb` (Kaggle): Optuna, Croston SBA, ablation, dự báo ngoài mẫu (OOF) của LR/LightGBM/XGBoost;
@@ -366,6 +365,26 @@ PR chứa `configs/models/lightgbm_tuned.json` (PR #25) phải được merge v�
 4. Chỉ khi nhóm chốt cấu hình: tạo tag `config-freeze-v2` (cập nhật `configs/freeze.yaml`), rồi chạy `05_m5_optional_test.ipynb`
    và `run_stacking.py --split test`. Nhãn Test của 7 mô hình lõi đã mở trước đó nên Test này không còn là dữ liệu giữ lại hoàn toàn.
 
+
+## 12. Nghiên cứu chính trên toàn bộ dữ liệu (5 mô hình)
+
+Bốn job Kaggle (CPU, khoảng 30 GB RAM; gắn dữ liệu competition `m5-forecasting-accuracy`, bật Internet), mỗi job một notebook:
+`notebooks/06a_full_validation.ipynb`, `06b_full_oof_1829.ipynb`, `06c_full_oof_1857.ipynb` (nhánh `full-data-5-models`) và
+`06d_full_test.ipynb` (clone tag `config-freeze`). Mỗi notebook chỉ gọi `scripts/kaggle_full_run.py --task validation|test|oof`.
+ETS mất khoảng 2,5 giờ mỗi job; bốn job chạy song song. Sau khi tải bốn tệp zip về:
+
+```bash
+python scripts/run_stacking.py --split validation --oof "results/full/oof/oof_*.parquet" --lgbm default --bases ets croston_sba lightgbm --base-runs results/full/runs/val-<run> --manifest data/full_series_ids_with_class.csv --out results/full/runs
+python scripts/collect_runs.py --split validation --runs results/full/runs/val-* --out results/full/tables/validation
+python scripts/analyze_results.py --split validation --tables results/full/tables/validation --figures results/full/figures/validation --classes data/full_series_ids_with_class.csv
+python scripts/bootstrap_ci.py --split validation --runs results/full/runs/val-* --out results/full/tables/validation
+python scripts/wrmsse.py --split validation --runs results/full/runs/val-* --out results/full/tables/validation
+python scripts/robustness_classes.py --split test --runs results/full/runs/tes-* --out results/full/tables/test --manifest data/full_series_ids_with_class.csv
+python scripts/build_report.py && python scripts/build_slides.py
+```
+
+(lặp lại với `test`; `run_stacking.py --split test` cần tag `config-freeze-v2`). Máy 8 GB RAM đủ cho các bước trên; huấn luyện LightGBM trên
+56 triệu dòng thì cần Kaggle.
 
 ## Tài nguyên gốc
 

@@ -1,0 +1,4 @@
+demand_class_after_first_sale,n_series,seasonal_naive,ets,croston_sba,lightgbm,stacking
+high_zero(>0.8),7486,1.062275,0.800332,0.806029,0.837441,0.805173
+low_zero(<=0.5),9919,0.941705,0.727997,0.745266,0.740352,0.723094
+mid_zero(0.5-0.8],13085,1.002136,0.75752,0.766073,0.765156,0.75502

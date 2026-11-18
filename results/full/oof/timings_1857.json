@@ -1,0 +1,18 @@
+{
+  "ets@1857": {
+    "fit_predict_sum_s": 34478.064936024,
+    "wall_s": 8645.658990662,
+    "workers": 4,
+    "n_fallback": 0
+  },
+  "croston_sba@1857": {
+    "fit_predict_sum_s": 8.606838223911836,
+    "wall_s": 7.875367122000171,
+    "workers": 4,
+    "n_fallback": 0
+  },
+  "lightgbm@1857": {
+    "fit_s": 203.49190259500028,
+    "predict_s": 1.1907608919991617
+  }
+}

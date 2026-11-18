@@ -1,0 +1,6 @@
+model,fit_predict_s,wall_s,scope,run_id,macro_rmsse,macro_mae,fit_predict_incl_bases_s
+seasonal_naive,0.709,2.616,"sum over series of per-series fit+predict, single thread each",tes-20261118T054917Z-c8ba5c8,0.997,1.244,0.709
+ets,35121.072,8794.315,"sum over series of per-series fit+predict, single thread each",tes-20261118T054917Z-c8ba5c8,0.758,1.04,35121.072
+croston_sba,10.463,4.537,"sum over series of per-series fit+predict, single thread each",tes-20261118T054917Z-c8ba5c8,0.769,1.075,10.463
+lightgbm,228.361,228.361,pooled model: fit + predict wall time (features timed separately),tes-20261118T054917Z-c8ba5c8,0.775,1.079,228.361
+stacking,12.082,12.082,Ridge meta fit on Train out-of-fold backtests (base fits not included),tes-20261118T083859Z-867b564-stack,0.757,1.05,35371.977

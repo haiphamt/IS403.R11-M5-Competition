@@ -1,0 +1,9 @@
+{
+  "stacking": {
+    "fit_s": 9.75995469999907,
+    "predict_s": 0.0,
+    "n_oof_rows": 67200,
+    "scope": "Ridge meta fit on Train out-of-fold backtests (base fits not included)",
+    "n_negative_raw_predictions": 0
+  }
+}

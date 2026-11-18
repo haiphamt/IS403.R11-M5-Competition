@@ -20,31 +20,50 @@ def _origin(split):
     return SPLITS[split][0] - 1
 
 
+def _scales_and_notes(history):
+    """RMSSE denominators per series via m5.metrics.rmsse_scale (NaN plus the error text when undefined)."""
+    scales, notes = np.full(len(history), np.nan), [""] * len(history)
+    for i, row in enumerate(history):
+        try:
+            scales[i] = metrics.rmsse_scale(row)
+        except ValueError as error:
+            notes[i] = str(error)
+    return scales, notes
+
+
 def per_series_metrics(pred, actuals, split):
     """pred: schema frame for ONE run/model set; actuals: wide frame indexed by series_id.
 
-    Returns one row per (run_id, model, series_id).
+    Returns one row per (run_id, model, series_id). Vectorised over series (30,490 series x several models),
+    with the same definitions as m5.metrics: RMSSE scale from d_1..origin, NaN plus a reason when undefined.
     """
     days = forecast_days(split)
     origin = _origin(split)
     history_cols = [f"d_{n}" for n in range(1, origin + 1)]
-    rows = []
-    for (run, model, sid), grp in pred.groupby(["run_id", "model", "series_id"], sort=False):
-        grp = grp.set_index("d").loc[days]  # align by day label
-        y_pred = grp["y_pred"].to_numpy(dtype=float)
-        y_true = actuals.loc[sid, days].to_numpy(dtype=float)
-        history = actuals.loc[sid, history_cols].to_numpy(dtype=float)
-        row = {"run_id": run, "model": model, "series_id": sid,
-               "mae": metrics.mae(y_true, y_pred), "rmse": metrics.rmse(y_true, y_pred),
-               "rmsse": np.nan, "r2": np.nan, "rmsse_note": "", "r2_note": ""}
-        for name, call in (("rmsse", lambda: metrics.rmsse(y_true, y_pred, history)),
-                           ("r2", lambda: metrics.r2(y_true, y_pred))):
-            try:
-                row[name] = call()
-            except ValueError as error:
-                row[f"{name}_note"] = str(error)
-        rows.append(row)
-    return pd.DataFrame(rows)
+    cache = {}
+    out = []
+    for (run, model), grp in pred.groupby(["run_id", "model"], sort=False):
+        sids = pd.unique(grp["series_id"])
+        wide = grp.pivot(index="series_id", columns="d", values="y_pred").loc[sids, days]  # align by key and day label
+        y_pred = wide.to_numpy(dtype=float)
+        y_true = actuals.loc[sids, days].to_numpy(dtype=float)
+        if not (np.isfinite(y_pred).all() and np.isfinite(y_true).all()):
+            raise ValueError(f"{run}/{model}: NaN or infinity in predictions or labels")
+        key = tuple(sids)
+        if key not in cache:  # every model of a run shares the same series and history
+            cache[key] = _scales_and_notes(actuals.loc[sids, history_cols].to_numpy(dtype=float))
+        scales, scale_notes = cache[key]
+        err = y_true - y_pred
+        mse = np.mean(err ** 2, axis=1)
+        sst = np.sum((y_true - y_true.mean(axis=1, keepdims=True)) ** 2, axis=1)
+        with np.errstate(divide="ignore", invalid="ignore"):
+            r2 = np.where(sst == 0, np.nan, 1 - np.sum(err ** 2, axis=1) / sst)
+        out.append(pd.DataFrame({
+            "run_id": run, "model": model, "series_id": sids,
+            "mae": np.mean(np.abs(err), axis=1), "rmse": np.sqrt(mse),
+            "rmsse": np.sqrt(mse / scales), "r2": r2,
+            "rmsse_note": scale_notes, "r2_note": np.where(sst == 0, "y_true is constant, R2 is undefined", "")}))
+    return pd.concat(out, ignore_index=True)
 
 
 def aggregate(series_scores, pred, actuals, split):

@@ -1,116 +1,100 @@
-# So sánh các phương pháp dự báo nhu cầu bán lẻ trên dữ liệu M5
+# So sánh các phương pháp dự báo nhu cầu bán lẻ trên toàn bộ dữ liệu M5
 
 **Môn:** Phân tích dữ liệu kinh doanh — IS403.R11. **Nhóm:** 6 (Tuấn Hải, Tuấn Vũ, Thanh Tiền, Thủy Tiên, Thùy Trang). Họ tên đầy đủ và MSSV chờ đối chiếu danh sách chính thức.
 
-> **Tình trạng bản thảo.** Bản thảo nội dung (chưa định dạng, không dùng template), do AI soạn từ kết quả thực nghiệm thật; chưa có thành viên nào review hay đối chiếu. Mọi con số trong mục 4 truy được về `run_id` và bảng trong `results/` (các bảng được sinh tự động bằng `scripts/build_report.py`). Nhóm cần tự: đối chiếu họ tên/MSSV, đọc lại toàn văn các nguồn đánh dấu "chưa đọc lại toàn văn", định dạng và nộp bài.
+> **Tình trạng bản thảo.** Bản thảo nội dung (chưa định dạng), do AI soạn từ kết quả thực nghiệm thật ngày 18/11/2026, sau khi nhóm quyết định rút gọn còn năm mô hình và chạy trên toàn bộ dữ liệu. Bản trước (mẫu 1.200 chuỗi, 7 mô hình lõi và 4 phương án mở rộng) đã được các thành viên review qua PR; bản này **chưa** được review và chưa có lượt đọc chéo toàn văn (W10). Mọi con số trong mục 4 truy được về `run_id` trong `results/full/runs/` và bảng trong `results/full/tables/` (sinh tự động bằng `scripts/build_report.py`).
 
 ## Tóm tắt
 
-Dự báo số lượng bán hỗ trợ doanh nghiệp bán lẻ lập kế hoạch bổ sung hàng, nhưng nhu cầu ở cấp sản phẩm–cửa hàng thường gián đoạn và khó dự báo. Đồ án so sánh bảy phương pháp — Seasonal Naive, Linear Regression, ETS, Croston, LightGBM, XGBoost, CatBoost — cho dự báo điểm 28 ngày trên mẫu phân tầng 1.200 chuỗi Walmart M5 (seed 42, 10 cửa hàng × 3 ngành hàng). Dữ liệu được chia theo thời gian (Train d_1–1885, Validation d_1886–1913, Test d_1914–1941); đặc trưng trễ lùi ít nhất 28 ngày và được kiểm thử không rò rỉ nhãn; cấu hình được khóa bằng tag `config-freeze` trước khi mở nhãn Test và Test chỉ chạy một lần. Hiệu quả đo bằng MAE, RMSE, RMSSE, R² và thời gian chạy. Trên Test, mọi mô hình học/thống kê giảm khoảng 22–25% macro-RMSSE so với Seasonal Naive (0,997); ETS đạt thấp nhất (0,752), tiếp theo Croston (0,764), LightGBM và XGBoost (0,768), Linear Regression (0,776). CatBoost (0,768) ngang LightGBM và XGBoost. ETS và Croston vượt các mô hình global ở nhóm chuỗi gián đoạn mạnh, còn ở nhóm ít số 0 các mô hình gần nhau; ETS chậm hơn LightGBM hơn một bậc độ lớn về thời gian thực (≈355 giây với 3 tiến trình so với ≈10 giây với 4 luồng), Croston gần như không tốn. Giới hạn: một cửa sổ Test 28 ngày, mẫu 1.200 chuỗi, giả định giá tương lai, khác biệt input giữa mô hình cục bộ và global, chưa đo chi phí tồn kho; Optuna, stacking, Croston SBA và ablation mới chạy trên Validation, chưa có kết quả Test.
+Dự báo số lượng bán hỗ trợ doanh nghiệp bán lẻ lập kế hoạch bổ sung hàng, nhưng nhu cầu ở cấp sản phẩm–cửa hàng thường gián đoạn và khó dự báo. Đồ án so sánh năm cách tiếp cận — Seasonal Naive (mốc đối chuẩn), ETS (làm mượt mũ), Croston SBA (chuyên cho hàng bán thưa), LightGBM (học máy global) và một stacking lai gộp ba mô hình trên — cho dự báo điểm 28 ngày trên **toàn bộ 30.490 chuỗi** sản phẩm–cửa hàng của Walmart M5. Năm mô hình được chọn từ một giai đoạn thử nghiệm sơ bộ với 11 mô hình trên mẫu 1.200 chuỗi. Dữ liệu chia theo thời gian (Train d_1–1885, Validation d_1886–1913, Test d_1914–1941); đặc trưng trễ lùi ít nhất 28 ngày và được kiểm thử không rò rỉ nhãn; cấu hình được khóa bằng tag `config-freeze` trước khi chạy Test, và Test chạy một lần. Hiệu quả đo bằng MAE, RMSE, RMSSE, R², thời gian chạy, và WRMSSE 12 cấp như cuộc thi M5. Trên Test, mọi mô hình giảm khoảng 22–24% macro-RMSSE so với Seasonal Naive (0,997). Stacking lai đạt macro-RMSSE thấp nhất (0,757), nhỉnh hơn ETS (0,758; chênh 0,0015, khoảng tin cậy bootstrap không chứa 0), tiếp theo Croston SBA (0,769) và LightGBM (0,775). Theo WRMSSE, stacking cũng tốt nhất (0,668), rồi LightGBM (0,722) và ETS (0,760); Croston SBA tốt ở cấp sản phẩm–cửa hàng nhưng kém nhất ở các cấp tổng hợp (WRMSSE 1,095) vì dự báo phẳng không có chu kỳ tuần. Trong ba mô hình cục bộ, ETS đạt sai số thấp nhất còn Croston SBA có thời gian tính toán ngắn nhất (khoảng 10 giây so với khoảng 2,5 giờ của ETS cho 30.490 chuỗi). Thứ hạng giữa các mô hình gần nhau đổi giữa Validation và Test (trên Validation, ETS nhỉnh hơn stacking và LightGBM có WRMSSE thấp nhất), nên chênh lệch nhỏ không được coi là bền vững. Giới hạn: một cửa sổ Test 28 ngày, giả định giá tương lai, khác biệt input giữa mô hình cục bộ và global, nhãn Test của 1.200 chuỗi pilot đã được xem trước khi chọn mô hình, chưa đo chi phí tồn kho.
 
-**Từ khóa:** dự báo bán lẻ, M5, nhu cầu gián đoạn, gradient boosting, ETS, Croston, đánh giá chuỗi thời gian.
+**Từ khóa:** dự báo bán lẻ, M5, nhu cầu gián đoạn, Croston SBA, ETS, LightGBM, stacking, WRMSSE.
 
-## 1. Introduction
+## 1. Giới thiệu
 
-Trong bán lẻ, quyết định bổ sung hàng cần dựa trên nhu cầu tương lai. Dự báo thấp làm tăng nguy cơ thiếu hàng; dự báo cao làm tăng tồn kho. Việc chọn phương pháp dự báo vì vậy phải cân nhắc đồng thời sai số, thời gian tính toán và khả năng giải thích.
+Dự báo doanh số theo ngày giúp nhà bán lẻ lên kế hoạch bổ sung hàng và cân đối tồn kho. Dự báo thấp làm tăng nguy cơ thiếu hàng, còn dự báo cao làm tăng tồn kho. Đề tài sử dụng dữ liệu M5 Forecasting – Accuracy [1] để dự báo số lượng bán trong 28 ngày tiếp theo cho từng cặp mặt hàng–cửa hàng. **Đầu vào** gồm lịch sử bán hàng theo ngày đến thời điểm dự báo cùng thông tin lịch, sự kiện, chương trình SNAP theo bang và giá bán theo tuần. **Đầu ra** là 28 dự báo điểm không âm $\hat{y}_{i,T+1}, \ldots, \hat{y}_{i,T+28}$ cho chuỗi $i$, với $T$ là ngày cuối cùng có doanh số quan sát được.
 
-Đồ án khảo sát bài toán dự báo số lượng bán theo ngày của từng sản phẩm tại từng cửa hàng trên dữ liệu M5 của Walmart. **Đầu vào** là lịch sử doanh số của chuỗi (sản phẩm–cửa hàng) đến ngày gốc (origin) $T$, cùng các biến bổ trợ: lịch, sự kiện, SNAP theo bang và giá bán theo tuần. **Đầu ra** là vector 28 dự báo điểm không âm $\hat y_{i,T+1},\dots,\hat y_{i,T+28}$ cho mỗi chuỗi $i$.
+Nhu cầu gián đoạn và sự khác biệt giữa các chuỗi là hai thách thức của bài toán. Trong tập huấn luyện, 68,4% số ngày trên toàn bộ 30.490 chuỗi có lượng bán bằng 0 (mẫu pilot 1.200 chuỗi: 70,1%), và 39,1% số chuỗi có trên 80% ngày bán 0, khiến các độ đo tỷ lệ phần trăm không dùng được. Mẫu hình bán hàng khác nhau theo mặt hàng và cửa hàng, nên độ chính xác của cùng một phương pháp có thể thay đổi theo nhóm chuỗi. Trong mẫu pilot, doanh số trung bình ngày thứ Bảy và Chủ nhật cao hơn khoảng 20% so với mức trung bình theo ngày của cả tuần; từ thứ Ba đến thứ Năm, doanh số trung bình ngày thấp hơn khoảng 12% (`results/tables/d07_eda_weekday.csv`). Để tránh rò rỉ thông tin, nhóm xây dựng đặc trưng trễ và thống kê trượt theo thời điểm dữ liệu thực sự có sẵn.
 
-Bài toán có ba thách thức. (i) *Nhu cầu gián đoạn*: trong mẫu của nhóm 70,1% số ngày bán bằng 0 (toàn bộ 30.490 chuỗi: 68,4%), khiến các độ đo tỷ lệ phần trăm không dùng được và nhiều giả định của mô hình thống kê khó thỏa. (ii) *Mùa vụ tuần và khác biệt nhóm hàng*: chỉ số doanh số cuối tuần (thứ Bảy, Chủ nhật) cao hơn khoảng 20% so với trung bình tuần, còn các ngày giữa tuần thấp hơn khoảng 12% (Bảng D07, `results/tables/d07_eda_weekday.csv`). (iii) *Rò rỉ thông tin*: đặc trưng trễ và thống kê trượt phải được dựng đúng theo thời điểm thông tin sẵn có với horizon 28 ngày.
+Nhóm thực nghiệm trên toàn bộ 30.490 chuỗi. Seasonal Naive với chu kỳ 7 ngày được dùng làm mốc so sánh cho ETS, Croston SBA, LightGBM và stacking lai gộp ba mô hình này; năm mô hình được chọn từ một giai đoạn thử nghiệm sơ bộ với 11 mô hình trên mẫu phân tầng 1.200 chuỗi (mục 3.2). Các mô hình dùng chung cách chia tập theo thời gian và cùng kỳ dự báo 28 ngày để so sánh độ chính xác và thời gian chạy.
 
-Nhóm đặt bốn câu hỏi: (Q1) các mô hình thống kê và boosting cải thiện bao nhiêu so với Seasonal Naive; (Q2) hiệu quả khác nhau thế nào giữa nhóm nhu cầu (từ tỷ lệ ngày 0 trên Train), ngành hàng và bang; (Q3) mức cải thiện độ chính xác đi cùng chi phí tính toán nào; (Q4) cơ chế mỗi phương pháp giải thích được hành vi dự báo nào. Đóng góp là một pipeline dùng chung, một phép so sánh trên cùng mẫu, cùng horizon và cùng độ đo, với truy vết từ bảng/hình về dữ liệu dự báo. Đây là tái lập có giới hạn bối cảnh M5 và so sánh thuật toán trong điều kiện tài nguyên của nhóm; không phải tái lập hệ thống đội thắng cuộc thi.
+Nhóm đặt năm câu hỏi: (Q1) các mô hình cải thiện bao nhiêu so với Seasonal Naive; (Q2) hiệu quả khác nhau thế nào giữa nhóm nhu cầu (theo tỷ lệ ngày 0 trên Train), ngành hàng và bang; (Q3) mức cải thiện đi cùng chi phí tính toán nào; (Q4) cơ chế của mỗi phương pháp giải thích được hành vi dự báo nào; (Q5) thứ hạng có thay đổi khi đánh giá ở các cấp tổng hợp theo WRMSSE của M5 hay không. Đóng góp là một pipeline dùng chung chạy được trên toàn bộ dữ liệu M5, một phép so sánh năm cách tiếp cận trên cùng dữ liệu, cùng horizon và cùng độ đo (kể cả WRMSSE 12 cấp), với truy vết từ bảng/hình về dữ liệu dự báo. Đây là so sánh thuật toán trong điều kiện tài nguyên của nhóm, không phải tái lập hệ thống đội thắng cuộc thi.
 
 ## 2. Related Work
 
-**Bối cảnh M5.** Makridakis, Spiliotis và Assimakopoulos (2022) tổng kết cuộc thi M5 Accuracy: dự báo 28 ngày doanh số của Walmart cho 42.840 chuỗi ở 12 cấp phân cấp (30.490 chuỗi sản phẩm–cửa hàng là cấp đáy), xếp hạng bằng WRMSSE. Theo bản tóm tắt của nhóm (`paper/summary.md`), đội thắng dùng LightGBM, WRMSSE 0,520, cải thiện 22,4% so với đối chuẩn thống kê tốt nhất; đáng chú ý chỉ 7,5% đội vượt đối chuẩn đó, nên dùng học máy không tự bảo đảm tốt hơn. Đồ án dùng RMSSE/MAE/RMSE/R² trên mẫu 1.200 chuỗi đáy, **không đồng nhất** với WRMSSE và không so thứ hạng với bảng xếp hạng M5 [1].
+**Bối cảnh M5.** Makridakis, Spiliotis và Assimakopoulos (2022) tổng kết cuộc thi M5 Accuracy: dự báo 28 ngày doanh số của Walmart cho 42.840 chuỗi ở 12 cấp phân cấp (30.490 chuỗi sản phẩm–cửa hàng là cấp đáy), xếp hạng bằng WRMSSE. Theo bản tóm tắt của nhóm (`paper/summary.md`), đội thắng dùng LightGBM, WRMSSE 0,520, cải thiện 22,4% so với đối chuẩn thống kê tốt nhất (ES_bu); ở riêng cấp sản phẩm–cửa hàng mức cải thiện chỉ khoảng 3,4% (0,884 so với 0,915), và chỉ 7,5% đội vượt ES_bu, nên dùng học máy không tự bảo đảm tốt hơn [1]. Cửa sổ Test của đồ án (d_1914–d_1941) trùng giai đoạn chấm bảng xếp hạng công khai (public leaderboard) của M5; giai đoạn chấm cuối (private, d_1942–d_1969) không dùng ở đây.
 
-**Phương pháp thống kê và nhu cầu gián đoạn.** ETS (làm mượt mũ có xu hướng/mùa) được lựa chọn tự động theo tiêu chí thông tin AIC hiệu chỉnh (AICc) trong khung của Hyndman và Khandakar (2008) [2]. Với chuỗi nhiều ngày 0, Croston (1972) tách ước lượng làm mượt của lượng bán khác 0 và của khoảng cách giữa các lần phát sinh nhu cầu [3]; Syntetos và Boylan (2005) chỉ ra ước lượng Croston có thiên lệch và đề xuất hiệu chỉnh (SBA) [4]. Nhóm dùng Croston cổ điển; SBA nằm ngoài phạm vi lõi.
+**Phương pháp thống kê và nhu cầu gián đoạn.** ETS (làm mượt mũ có xu hướng/mùa) được lựa chọn tự động theo AICc trong khung của Hyndman và Khandakar (2008) [2]. Với chuỗi nhiều ngày 0, Croston (1972) tách ước lượng làm mượt của lượng bán khác 0 và của khoảng cách giữa các lần phát sinh nhu cầu [3]; Syntetos và Boylan (2005) chỉ ra ước lượng Croston bị chệch lên và đề xuất nhân hệ số $(1-\alpha/2)$ (SBA) [4]. Đồ án dùng bản SBA.
 
-**Hồi quy và boosting.** Gradient boosting cộng dần các cây quyết định để giảm hàm mất mát (Friedman, 2001) [5]. LightGBM (Ke và cs., 2017) giảm chi phí huấn luyện bằng lấy mẫu theo gradient (GOSS) và gộp đặc trưng loại trừ (EFB) [6]; XGBoost (Chen và Guestrin, 2016) nhấn mạnh hệ thống boosting mở rộng được với chính quy hóa tường minh [7]; CatBoost (Prokhorenkova và cs., 2018) xử lý biến phân loại bằng thống kê mục tiêu có thứ tự và boosting có thứ tự để giảm *target leakage* [8]. Bandara và cs. (2022) dùng ensemble các mô hình global (trong đó có LightGBM) cho M5, nhấn mạnh học chéo giữa các chuỗi thay vì fit từng chuỗi [9].
+**Học máy và kết hợp dự báo.** Gradient boosting cộng dần các cây quyết định để giảm hàm mất mát (Friedman, 2001) [5]; LightGBM (Ke và cs., 2017) giảm chi phí huấn luyện bằng lấy mẫu theo gradient (GOSS) và gộp đặc trưng loại trừ (EFB) [6], và là họ mô hình của phần lớn đội đứng đầu M5 [1]. Bandara và cs. (2022) dùng ensemble các mô hình global cho M5, nhấn mạnh học chéo giữa các chuỗi [9]. Kết hợp nhiều dự báo là một trong những kết luận lặp lại của M5 [1]; đồ án kiểm tra một dạng kết hợp có trọng số học được (stacking) giữa mô hình cục bộ và mô hình global. XGBoost [7] và CatBoost [8] có mặt trong giai đoạn thử nghiệm sơ bộ (pilot) nhưng không vào nghiên cứu chính (mục 3.2).
 
-**Tổng hợp và khoảng trống.** Các công trình trên khác nhau về dữ liệu, horizon, chiến lược local/global, biến ngoại sinh và độ đo, nên thứ hạng không chuyển trực tiếp sang thiết lập của nhóm. Đóng góp của đồ án nằm ở việc đặt bảy mô hình dưới cùng mẫu, cùng cắt thời gian và cùng độ đo, đồng thời công bố khác biệt input (univariate so với exogenous) và local/global giữa chúng. Nguồn [1], [6], [9] được đối chiếu qua bản tóm tắt và hồ sơ tác giả trong repo (`paper/`); các nguồn [2]–[5], [7], [8] là bài gốc kinh điển, thông tin thư mục được ghi theo hiểu biết của nhóm và **chưa được nhóm đọc lại toàn văn**.
+**Tổng hợp và khoảng trống.** Các công trình trên khác nhau về dữ liệu, horizon, chiến lược local/global và độ đo. Đóng góp của đồ án là đặt năm mô hình đại diện cho năm cách tiếp cận (mốc ngây thơ, làm mượt mũ, chuyên cho hàng bán thưa, học máy global, kết hợp lai) trên **toàn bộ 30.490 chuỗi**, cùng cắt thời gian và cùng độ đo, kèm WRMSSE 12 cấp để đối chiếu được với M5. Nguồn [1], [6], [9] được đối chiếu qua bản tóm tắt và hồ sơ tác giả trong repo (`paper/`); các nguồn [2]–[5], [7], [8] là bài gốc kinh điển, thông tin thư mục **chưa được nhóm đọc lại toàn văn**.
 
 ## 3. Phương pháp thực hiện
 
-### 3.1. Dữ liệu, mẫu và chia thời gian
+### 3.1. Dữ liệu và chia thời gian
 
-Dữ liệu gồm `calendar.csv`, `sell_prices.csv`, `sales_train_validation.csv`, `sales_train_evaluation.csv`, `sample_submission.csv`. Hai file doanh số có phần lịch sử trùng nhau (đã kiểm: d_1–d_1913 giống hệt nhau), nên pipeline dùng `sales_train_evaluation.csv` (d_1–d_1941) để chia tập, không nối chồng. `sample_submission.csv` chỉ là khuôn đầu ra, không chứa nhãn. Khóa chuỗi là `series_id` = `item_id_store_id` (bỏ hậu tố `_validation/_evaluation`); mọi phép nối theo khóa, không theo thứ tự dòng.
-
-**Mẫu.** 1.200 chuỗi chọn phân tầng theo cửa hàng × ngành hàng (10 × 3 = 30 tầng, mỗi tầng 40 chuỗi), seed 42; hash manifest SHA-256 `68d7acc8ef39f266d5b8274569fc25869c4187ba160a07686a2b292b0d5940f4`. Mức đại diện chỉ dùng thống kê Train (Bảng 1). Mẫu không bị chọn lại sau khi thấy kết quả.
-
-*Bảng 1. Đại diện của mẫu so với 30.490 chuỗi (Train d_1–d_1885; nguồn `results/tables/d02_*.csv`).*
-
-| Chỉ tiêu | Toàn bộ | Mẫu |
-|---|---|---|
-| Số chuỗi | 30.490 | 1.200 |
-| Tỷ lệ ngày bán 0 | 0,684 | 0,701 |
-| Doanh số trung bình/ngày | 1,122 | 1,019 |
-| Nhóm tỷ lệ 0 ≤ 0,5 | 21,4% | 19,4% |
-| Nhóm 0,5–0,8 | 39,5% | 37,3% |
-| Nhóm > 0,8 | 39,1% | 43,3% |
-
-Mẫu hơi lệch về phía chuỗi gián đoạn mạnh hơn (43,3% so với 39,1% ở nhóm > 0,8), nên mức doanh số trung bình thấp hơn khoảng 9%. Ngưỡng nhóm 0,5/0,8 được cố định từ Train trước khi có Test.
+Dữ liệu gồm `calendar.csv`, `sell_prices.csv`, `sales_train_validation.csv`, `sales_train_evaluation.csv`, `sample_submission.csv`. Hai file doanh số có phần lịch sử trùng nhau (đã kiểm: d_1–d_1913 giống hệt nhau khi so theo `series_id`), nên pipeline dùng `sales_train_evaluation.csv` (d_1–d_1941). Khóa chuỗi là `series_id` = `item_id_store_id`; mọi phép nối theo khóa, không theo thứ tự dòng. Nghiên cứu chính dùng **toàn bộ 30.490 chuỗi** (`data/full_series_ids_with_class.csv`, `scripts/prepare_full_manifest.py`). Nhóm nhu cầu của mỗi chuỗi tính từ tỷ lệ ngày bán 0 trên Train (d_1–d_1885): ≤ 0,5 (21,4% số chuỗi), 0,5–0,8 (39,5%), > 0,8 (39,1%).
 
 | Tập | Ngày | Vai trò |
 |---|---|---|
-| Train | d_1–d_1885 | Huấn luyện, EDA, phân nhóm nhu cầu |
-| Validation | d_1886–d_1913 | Chọn cấu hình |
-| Test | d_1914–d_1941 | Đánh giá cuối, chỉ sau tag `config-freeze` |
+| Train | d_1–d_1885 | Huấn luyện, phân nhóm nhu cầu, backtest cho stacking (mốc 1829, 1857) |
+| Validation | d_1886–d_1913 | Báo cáo trước khi khóa cấu hình |
+| Test | d_1914–d_1941 | Đánh giá cuối, refit trên d_1–d_1913, chạy một lần sau tag `config-freeze` |
 
-Khi dự báo Test, mọi mô hình được fit lại trên d_1–d_1913 theo cùng recipe. `scripts/run_experiment.py --split test` từ chối chạy (kể cả với `--max-series`) nếu tag `config-freeze` chưa có, không nằm trong HEAD, cây làm việc có thay đổi chưa commit ngoài `results/`, hoặc (với mô hình tùy chọn) thiếu tag `config-freeze-v2` / `lightgbm_tuned.json` trong tag đó.
+### 3.2. Thiết kế hai giai đoạn: pilot 1.200 chuỗi rồi toàn bộ dữ liệu
 
-### 3.2. Đặc trưng và chống rò rỉ
+Ở giai đoạn thử nghiệm sơ bộ (pilot), nhóm chạy 7 mô hình lõi (Seasonal Naive, Linear Regression, ETS, Croston, LightGBM, XGBoost, CatBoost) và 4 phương án mở rộng (Croston SBA, LightGBM tinh chỉnh bằng Optuna, LightGBM bỏ giá/sự kiện, stacking Ridge) trên một mẫu phân tầng 1.200 chuỗi (10 cửa hàng × 3 ngành hàng × 40 chuỗi, seed 42). Bảng P1 tóm tắt kết quả pilot và quyết định cho nghiên cứu chính. Tiêu chí chọn: (i) mỗi mô hình đại diện một cách tiếp cận khác nhau; (ii) bỏ mô hình trùng vai trò mà không tốt hơn (XGBoost và CatBoost ngang LightGBM nhưng chậm hơn, CatBoost ước tính cần khoảng 14 giờ CPU trên toàn bộ dữ liệu, vượt giới hạn một phiên Kaggle; Croston cổ điển kém SBA ở cả hai tập; Linear Regression kém nhất trong nhóm học máy); (iii) bỏ phương án không đứng vững trên Test (LightGBM Tuned hơn bản mặc định trên Validation nhưng không hơn trên Test) hoặc chỉ là phép thử phụ (bỏ giá/sự kiện). Stacking được giữ nhưng **dựng lại** thành bản lai gộp ETS, Croston SBA và LightGBM, vì ba mô hình cơ sở cũ đã bị bỏ và vì kết hợp mô hình cục bộ với global là phép thử chưa có ở pilot.
 
-Với chuỗi $i$ và ngày $t$, đặc trưng lõi là: $\text{lag}_k=y_{i,t-k}$, $k\in\{28,35,42\}$; $\text{rmean}_w=\frac1w\sum_{j=0}^{w-1}y_{i,t-28-j}$ và $\text{rstd}_w$ (độ lệch chuẩn mẫu) với $w\in\{7,28\}$ trên chuỗi đã lùi 28 ngày; `wday`, `month`, `year`; hai cặp sự kiện (tên, loại); SNAP của bang; `sell_price` và cờ `price_missing`; định danh `dept_id`, `cat_id`, `store_id`, `state_id`. Với origin $T$ và $t\le T+28$, mọi nguồn $y$ đều $\le T$; nhãn từ $T+1$ trở đi bị che bằng NaN trước khi dựng đặc trưng. Kiểm thử (`tests/test_no_leakage.py`) làm hỏng toàn bộ nhãn sau origin 1885 và 1913 rồi xác nhận đặc trưng và target không đổi, đồng thời kiểm ranh giới giữa các chuỗi. Phép thử này cũng được lặp lại trên dữ liệu thật (1.200 chuỗi, cả hai origin): làm hỏng mọi nhãn sau origin không đổi bảng đặc trưng, nhãn huấn luyện và dự báo của LightGBM, còn đổi một nhãn trước origin thì có đổi (đối chứng dương). Đây là dự báo *trực tiếp* cả 28 ngày từ một origin, không đệ quy.
+*Bảng P1. Kết quả pilot trên 1.200 chuỗi (macro-RMSSE) và quyết định cho nghiên cứu chính. Nguồn: `results/runs/*/metrics_summary.csv`.*
 
-Giá thiếu (trước ngày sản phẩm được niêm yết) giữ NaN kèm `price_missing`, không back-fill; 21,3% ô chuỗi–ngày Train thiếu giá. **Giả định giá tương lai:** pipeline dùng giá tuần của chính ngày cần dự báo (bảng giá M5 công bố đến d_1969). Trong vận hành, điều này chỉ đúng nếu giá được lập kế hoạch trước; đây là giả định phải nêu, không phải bằng chứng nhân quả của giá. `item_id` không dùng làm biến phân loại (cardinality cao, đã có lag/rolling mang mức doanh số của chuỗi), khác danh sách trong `configs/features.yaml`.
+<!-- TABLE:pilot_summary -->
+| Mô hình (pilot 1.200 chuỗi) | RMSSE Validation | RMSSE Test | Quyết định |
+|---|---|---|---|
+| ETS | 0,729 | 0,752 | chọn |
+| Croston SBA | 0,743 | 0,762 | chọn |
+| Croston | 0,745 | 0,764 | bỏ |
+| LightGBM bỏ giá/sự kiện | 0,748 | 0,766 | bỏ |
+| CatBoost | 0,763 | 0,768 | bỏ |
+| LightGBM | 0,750 | 0,768 | chọn |
+| XGBoost | 0,750 | 0,768 | bỏ |
+| Stacking (LR + LightGBM Tuned + XGBoost + CatBoost) | 0,752 | 0,769 | chọn, dựng lại thành bản lai ETS + SBA + LightGBM |
+| LightGBM Tuned | 0,745 | 0,770 | bỏ |
+| Linear Regression | 0,759 | 0,776 | bỏ |
+| Seasonal Naive | 0,978 | 0,997 | chọn (mốc) |
+<!-- /TABLE -->
 
-Phép impute (trung vị), chuẩn hóa và mã hóa one-hot của Linear Regression được fit chỉ trên các dòng huấn luyện (ngày đích ≤ origin), không dùng nhãn của giai đoạn dự báo. Không dùng target encoding.
+Cần lưu ý: nhãn Test của 1.200 chuỗi pilot (3,9% số chuỗi) đã được xem trước khi chốt năm mô hình, nên Test toàn bộ không còn hoàn toàn "mù" với quyết định chọn mô hình. Cấu hình của từng mô hình (tham số, đặc trưng) không đổi so với pilot.
 
-### 3.3. Seasonal Naive
+### 3.3. Đặc trưng và chống rò rỉ
 
-Chu kỳ 7 ngày, lặp lại tuần cuối: $\hat y_{T+h}=y_{T-6+((h-1)\bmod 7)}$. Không có tham số học; làm mốc đối chiếu. Phản ứng kém khi tuần cuối bất thường (khuyết bán, sự kiện không lặp lại).
+Với chuỗi $i$ và ngày $t$, đặc trưng của LightGBM là: $\text{lag}_k=y_{i,t-k}$, $k\in\{28,35,42\}$; $\text{rmean}_w=\frac1w\sum_{j=0}^{w-1}y_{i,t-28-j}$ và $\text{rstd}_w$ với $w\in\{7,28\}$ trên chuỗi đã lùi 28 ngày; `wday`, `month`, `year`; hai cặp sự kiện (tên, loại); SNAP của bang; `sell_price` và cờ `price_missing`; `dept_id`, `cat_id`, `store_id`, `state_id`. Với origin $T$ và $t\le T+28$, mọi nguồn $y$ đều $\le T$; nhãn từ $T+1$ bị che bằng NaN trước khi dựng đặc trưng. Kiểm thử (`tests/test_no_leakage.py`) làm hỏng toàn bộ nhãn sau origin rồi xác nhận đặc trưng và target không đổi. Đây là dự báo *trực tiếp* cả 28 ngày từ một origin, không đệ quy. Trên toàn bộ dữ liệu, bảng huấn luyện có khoảng 55,8 triệu dòng (Validation) và 56,6 triệu dòng (Test); cột phân loại được dựng từ mã số thay cho chuỗi chữ để vừa bộ nhớ Kaggle (30 GB), và kiểm tra cho thấy cách dựng mới cho dự báo LightGBM trùng cách cũ trên 1.200 chuỗi (lệch tối đa 1,8·10⁻¹⁵).
 
-### 3.4. Linear Regression
+Giá thiếu (trước ngày sản phẩm được niêm yết) giữ NaN kèm `price_missing`, không back-fill. **Giả định giá tương lai:** pipeline dùng giá tuần của chính ngày cần dự báo (bảng giá M5 công bố đến d_1969); đây là giả định phải nêu, không phải bằng chứng nhân quả của giá. `item_id` không dùng làm biến phân loại (cardinality cao).
 
-$\hat y=\beta_0+\sum_j\beta_jx_j$, huấn luyện chung (global) trên toàn mẫu bằng bình phương tối thiểu thông thường. Biến số được impute trung vị và chuẩn hóa z-score; biến phân loại one-hot (bỏ nhóm đầu để tránh cộng tuyến với hệ số chặn). Hệ số của biến chuẩn hóa so sánh được độ lớn tương đối giữa các biến số, và là liên hệ điều kiện, không phải tác động nhân quả. Bảng hệ số thực học nằm ở `diag_linear_regression_coefficients.csv`.
+### 3.4. Seasonal Naive (mốc đối chuẩn)
+
+Chu kỳ 7 ngày, lặp lại tuần cuối: $\hat y_{T+h}=y_{T-6+((h-1)\bmod 7)}$. Không có tham số học.
 
 ### 3.5. ETS
 
-AutoETS (statsforecast) chu kỳ 7, chọn cấu trúc (error, trend, season) trong họ ETS theo AICc; mỗi chuỗi fit riêng. Dự báo không bị cắt trong hàm mô hình; pipeline cắt tại 0 đồng loạt cho mọi mô hình (mục 3.9). Cấu trúc được chọn và $\alpha,\beta,\gamma$ của từng chuỗi được lưu ở `diag_ets.csv`; chuỗi lỗi được fallback sang Seasonal Naive và ghi lý do ở `diag_fallbacks.csv`.
+AutoETS (statsforecast) chu kỳ 7, chọn cấu trúc (error, trend, season) trong họ ETS theo AICc; mỗi chuỗi fit riêng. Cấu trúc và $\alpha,\beta,\gamma$ từng chuỗi lưu ở `diag_ets.csv`; chuỗi lỗi được fallback sang Seasonal Naive và ghi lý do ở `diag_fallbacks.csv`.
 
-### 3.6. Croston
+### 3.6. Croston SBA
 
-Croston cổ điển (smoothing $\alpha=0{,}1$, mặc định của statsforecast): khi có nhu cầu $y_t>0$ cập nhật $z\leftarrow z+\alpha(y_t-z)$ và $p\leftarrow p+\alpha(q-p)$ với $q$ là khoảng cách tính theo ngày từ lần nhu cầu trước; dự báo phẳng $\hat y=z/p$. Cài đặt tham chiếu của nhóm (`croston_components`) được kiểm khớp dự báo statsforecast. Giá trị $z,p$ từng chuỗi ở `diag_croston.csv`.
+Croston cập nhật, chỉ khi có nhu cầu $y_t>0$, lượng bán làm mượt $z\leftarrow z+\alpha(y_t-z)$ và khoảng cách làm mượt $p\leftarrow p+\alpha(q-p)$ ($q$ là số ngày từ lần có nhu cầu trước); dự báo phẳng. SBA nhân hệ số hiệu chỉnh chệch: $\hat y=(1-\alpha/2)\,z/p$, với $\alpha=0{,}1$ (`statsforecast.CrostonSBA`). Mỗi chuỗi fit riêng, chỉ dùng lịch sử doanh số.
 
-### 3.7. LightGBM, XGBoost, CatBoost
+### 3.7. LightGBM
 
-Cả ba là mô hình global với cùng bảng đặc trưng; tham số là mặc định thư viện, chỉ đặt `random_state=42`, số luồng và cách khai báo biến phân loại: LightGBM nhận cột dạng `category`; XGBoost dùng `enable_categorical=True` (tree method mặc định); CatBoost khai báo `cat_features` (chuỗi). Mô hình boosting có dạng $F_m(x)=F_{m-1}(x)+\eta f_m(x)$, với cây $f_m$ học phần sai số còn lại; số cây, tốc độ học và độ sâu mặc định được ghi đầy đủ trong `model_parameters.json` của từng run. Không early stopping, không tuning (Optuna là phần tùy chọn, xem mục 3.10).
+Mô hình global (một mô hình cho toàn bộ 30.490 chuỗi), tham số mặc định thư viện, chỉ đặt `random_state=42`, số luồng và khai báo biến phân loại. Mô hình boosting có dạng $F_m(x)=F_{m-1}(x)+\eta f_m(x)$, với cây $f_m$ học phần sai số còn lại. Không early stopping, không tuning.
 
-### 3.8. Local và global; khác biệt input
+### 3.8. Stacking lai (ETS + Croston SBA + LightGBM)
 
-Seasonal Naive, ETS, Croston là *local* và chỉ thấy lịch sử doanh số của chính chuỗi. Linear Regression, LightGBM, XGBoost, CatBoost là *global* và thấy thêm giá, lịch, SNAP, nhóm hàng và đặc trưng trễ của mọi chuỗi. Vì vậy chênh lệch giữa hai nhóm gộp hiệu ứng của thuật toán và của thông tin ngoại sinh; bản ablation bỏ giá/sự kiện (X02) nằm ngoài phạm vi lõi. Pilot LightGBM theo chuỗi (C03) chỉ đo thời gian 10 chuỗi và không dùng để suy thời gian global.
+Dự báo cuối là $\hat y=\max\big(0,\ \beta_0+\beta_1\hat y^{\text{ETS}}+\beta_2\hat y^{\text{SBA}}+\beta_3\hat y^{\text{LGBM}}\big)$. Hệ số $\beta$ được khớp bằng hồi quy Ridge trên **dự báo ngoài mẫu trong Train**: ba mô hình cơ sở được fit đến mốc 1829 và 1857 rồi dự báo 28 ngày kế tiếp (nhãn tới d_1885, không chạm Validation hay Test), cho 2 × 30.490 × 28 dòng. Hệ số phạt alpha chọn trong {0,1; 1; 10; 100; 1000} bằng leave-one-origin-out trên hai mốc. Bộ gộp đã khớp được giữ nguyên rồi áp vào dự báo Validation và Test của ba mô hình cơ sở, nên điểm Validation/Test không dùng để khớp bộ gộp.
 
-### 3.9. Hậu xử lý
+### 3.9. Local, global và hậu xử lý
 
-Mọi dự báo được cắt $\max(\hat y,0)$ (doanh số không âm), không làm tròn; số dự báo âm trước khi cắt của từng mô hình ghi ở `timings.json`. Chính sách giống nhau cho cả bảy mô hình.
-
-### 3.10. Tối ưu và kết hợp dự báo
-
-Bốn phần tùy chọn có mã nguồn và kiểm thử (PR #24). **Đã chạy trên Validation:** Optuna cho LightGBM (30 lượt, chỉ dùng nhãn Validation; Tuned đạt macro-RMSSE 0,7447 so với 0,7496 của Default, nên được chọn), Croston SBA (0,7425 so với 0,7447 của Croston cổ điển) và ablation LightGBM bỏ nhóm giá/sự kiện (0,7479). Chênh lệch giữa Tuned và Default được đo trên đúng cửa sổ dùng để chọn nên hơi lạc quan; Test mới là phép kiểm độc lập. Stacking Ridge (T02) khớp bộ gộp trên 67.200 dòng dự báo ngoài mẫu (hai mốc backtest 1829 và 1857 trong Train, nhãn tới d_1885; bốn mô hình cơ sở: Linear Regression, LightGBM Tuned, XGBoost, CatBoost), alpha = 1000 chọn bằng leave-one-origin-out và nằm đúng biên trên của lưới 0,1–1000. Trên Validation, stacking đạt macro-RMSSE 0,7519: **không tốt hơn** LightGBM Tuned (0,7447) hay ETS (0,7293), nhưng có RMSE gộp thấp nhất (2,0251 so với 2,0389 của CatBoost, mô hình tốt nhất kế tiếp). Trọng số: Linear Regression 0,378, LightGBM Tuned 0,323, XGBoost 0,195, CatBoost 0,173. Một giả thuyết (chưa kiểm) cho khoảng cách giữa hai thước đo là bộ gộp tối thiểu hóa sai số bình phương gộp nên ưu tiên chuỗi bán nhiều, trong khi macro-RMSSE chuẩn hóa theo từng chuỗi. Chỉ có hai mốc backtest nên trọng số kém ổn định. **Chưa có kết quả:** **toàn bộ phần Test của các mô hình tùy chọn, gồm stacking** (cần tag `config-freeze-v2`, chưa tạo vì chờ các thành viên review). Vì nhãn Test của 7 mô hình lõi đã được mở trước đó, Test của phần tùy chọn sẽ không còn là dữ liệu giữ lại hoàn toàn. Bảng dưới đặt các mô hình tùy chọn cạnh bản tham chiếu lõi trên Validation (macro trên 1.200 chuỗi); các bảng 4.x còn lại chỉ gồm 7 mô hình lõi.
-
-<!-- TABLE:val_optional -->
-| Mô hình | MAE (macro) | RMSE (macro) | RMSSE (macro) | fit+predict (s) | Ghi chú |
-|---|---|---|---|---|---|
-| LightGBM | 0,9876 | 1,2797 | 0,7496 | 10,4 | tham chiếu lõi |
-| LightGBM Tuned (Optuna) | 0,9835 | 1,2825 | 0,7447 | 55,2 | T01; thời gian không gồm 1.295 giây tìm tham số |
-| LightGBM bỏ giá/sự kiện | 0,9856 | 1,2822 | 0,7479 | 8,9 | X02 |
-| Croston | 0,9951 | 1,2919 | 0,7447 | 1,4 | tham chiếu lõi |
-| Croston SBA | 0,9817 | 1,2875 | 0,7425 | 0,3 | X01 |
-| Stacking Ridge | 0,9920 | 1,2801 | 0,7519 | 10,7 | T02; thời gian chỉ gồm khớp bộ gộp, không gồm các mô hình cơ sở |
-<!-- /TABLE -->
-
-Thời gian ở bảng trên đến từ các phiên Kaggle khác nhau (riêng stacking chạy cục bộ trên Windows và chỉ tính bước khớp bộ gộp gồm cả chọn alpha; run lõi và run tùy chọn chạy ở thời điểm khác nhau, Croston SBA chạy nhanh hơn Croston cổ điển 0,3 giây so với 1,4 giây dù cùng cách tính), nên chỉ đọc theo thứ tự độ lớn và không so trực tiếp giữa các hàng.
+Seasonal Naive, ETS, Croston SBA là *local* (chỉ thấy lịch sử doanh số của chính chuỗi); LightGBM là *global* (thấy thêm giá, lịch, SNAP, nhóm hàng và đặc trưng trễ của mọi chuỗi); stacking gộp cả hai. Chênh lệch giữa hai nhóm vì vậy gộp hiệu ứng của thuật toán và của thông tin ngoại sinh. Mọi dự báo được cắt $\max(\hat y,0)$, không làm tròn; số dự báo âm trước khi cắt ghi ở `timings.json`.
 
 ## 4. Thực nghiệm và đánh giá
 
@@ -120,319 +104,310 @@ Với $e_{i,h}=y_{i,T+h}-\hat y_{i,T+h}$ và $H=28$:
 
 - $\mathrm{MAE}_i=\frac1H\sum_h|e_{i,h}|$ — cùng đơn vị với doanh số (sản phẩm/ngày).
 - $\mathrm{RMSE}_i=\sqrt{\frac1H\sum_h e_{i,h}^2}$ — phạt nặng sai số lớn.
-- $\mathrm{RMSSE}_i=\sqrt{\dfrac{\frac1H\sum_h e_{i,h}^2}{\frac1{n-s_i}\sum_{t=s_i+1}^{n}(y_{i,t}-y_{i,t-1})^2}}$ với $n=T$, $s_i$ là ngày bán khác 0 đầu tiên (bỏ leading zeros); mẫu số là sai số naïve một bước trên lịch sử huấn luyện. Không có đơn vị; $<1$ nghĩa là tốt hơn naïve một bước trong mẫu.
-- $R^2_i=1-\mathrm{SSE}_i/\mathrm{SST}_i$ trên 28 ngày đánh giá; có thể âm; dự báo hoàn hảo cho 1.
+- $\mathrm{RMSSE}_i=\sqrt{\dfrac{\frac1H\sum_h e_{i,h}^2}{\frac1{n-s_i}\sum_{t=s_i+1}^{n}(y_{i,t}-y_{i,t-1})^2}}$ với $n=T$, $s_i$ là ngày bán khác 0 đầu tiên; mẫu số là sai số naïve một bước trên lịch sử Train. $<1$ nghĩa là sai số dự báo nhỏ hơn sai số naïve một bước *trong mẫu Train*.
+- $R^2_i=1-\mathrm{SSE}_i/\mathrm{SST}_i$ trên 28 ngày đánh giá; có thể âm.
+- **WRMSSE** (như M5): dự báo cấp đáy được cộng lên 12 cấp (tổng; bang; cửa hàng; ngành hàng; nhóm hàng; bang × ngành; bang × nhóm; cửa hàng × ngành; cửa hàng × nhóm; sản phẩm; sản phẩm × bang; sản phẩm × cửa hàng), tổng cộng 42.840 chuỗi; mỗi chuỗi có RMSSE riêng; trọng số là doanh thu (số lượng × giá) 28 ngày cuối trước origin, chuẩn hóa trong từng cấp; WRMSSE là trung bình 12 cấp (`scripts/wrmsse.py`). Kiểm tra cài đặt: dự báo hoàn hảo cho 0, Seasonal Naive trên cửa sổ Test cho 0,870, dự báo toàn 0 cho 5,447.
 
-**Chính sách (chốt trước khi xem Test).** Chuỗi toàn 0 hoặc mẫu số bằng 0 → RMSSE không xác định; nhãn đánh giá hằng → $R^2$ không xác định. Các trường hợp này **không** thay bằng epsilon: ghi NaN kèm lý do, loại khỏi trung bình macro và đếm riêng (`n_rmsse_undefined`, `n_r2_undefined`). Tổng hợp *macro* là trung bình theo chuỗi trên các chuỗi xác định; MAE/RMSE *pooled* tính trên toàn bộ cặp (chuỗi, ngày). Bảng chính dùng macro-RMSSE làm tiêu chí xếp hạng, kèm MAE macro. WRMSSE của M5 (trọng số doanh thu, 12 cấp) không được dùng và **không tương đương** với trung bình RMSSE ở đây. Độ đo có unit test tính tay, dự báo hoàn hảo, leading zeros, chuỗi hằng, sai shape và NaN (`tests/test_metrics.py`).
+**Chính sách (chốt trước khi chạy Test).** Mẫu số RMSSE bằng 0 → RMSSE không xác định; nhãn đánh giá hằng → $R^2$ không xác định. Các trường hợp này **không** thay bằng epsilon: ghi NaN kèm lý do, loại khỏi trung bình và đếm riêng. Tổng hợp *macro* là trung bình theo chuỗi; MAE/RMSE *pooled* tính trên toàn bộ cặp (chuỗi, ngày). Xếp hạng chính theo macro-RMSSE trên 30.490 chuỗi (mọi chuỗi đều có RMSSE xác định ở cả Validation và Test); WRMSSE báo cáo bên cạnh để trả lời Q5.
 
-**Runtime.** Với mô hình cục bộ: tổng thời gian fit+predict từng chuỗi (đơn luồng mỗi chuỗi), warm-up (biên dịch numba) tính riêng. Với mô hình global: thời gian fit và predict toàn mẫu với nhiều luồng, thời gian dựng đặc trưng và đọc/ghép dữ liệu tính riêng. Hai nhóm không cùng phạm vi nên không so trực tiếp nếu khác phần cứng; mọi run nêu phần cứng và phiên bản thư viện.
+**Runtime.** Mô hình cục bộ: tổng thời gian fit+predict từng chuỗi (đơn luồng mỗi chuỗi, 4 tiến trình song song). LightGBM: thời gian fit+predict toàn bộ dữ liệu với 4 luồng; dựng đặc trưng và đọc dữ liệu tính riêng. Stacking: thời gian khớp bộ gộp, cộng thêm chi phí của ba mô hình cơ sở. Hai nhóm không cùng phạm vi nên không so trực tiếp.
 
-### 4.2. Thiết lập và kết quả
+### 4.2. Môi trường và các run
 
-**Môi trường.** Mọi run chính chạy trên Kaggle (CPU 4 lõi, Python 3.13), mã lấy từ nhánh `m5-end-to-end`; các phiên bản thư viện (numpy 2.1.3, pandas 2.3.3, scikit-learn 1.6.1, statsforecast 2.1.1, LightGBM 4.6.0, XGBoost 3.4.1, CatBoost 1.2.10) được ghim trong `requirements.txt` và lưu trong `environment.json` của từng run. Mô hình cục bộ dùng 3 tiến trình song song, mô hình global dùng 4 luồng. Mọi mô hình dùng cùng 1.200 chuỗi, cùng chính sách đặc trưng, cắt dự báo âm về 0 và cùng bộ đo (mục 4.1). Danh sách run:
+Các mô hình cơ sở chạy trên Kaggle (CPU 4 lõi, khoảng 30 GB RAM, Python 3.13; numpy 2.1.3, pandas 2.3.3, scikit-learn 1.6.1, statsforecast 2.1.1, LightGBM 4.6.0, đúng các phiên bản ghim trong `requirements.txt`), mỗi job một notebook (`notebooks/06a–06d`, `scripts/kaggle_full_run.py`): Validation, Test và hai backtest trong Train. Cả bốn job dùng cùng mã (commit `c8ba5c8`, chính là commit gắn tag `config-freeze`), cùng năm tệp CSV (SHA-256 trùng nhau, ghi ở `data_sha256.json` của từng run) và cùng danh sách 30.490 chuỗi (hash `56a6267c…`). Stacking (khớp bộ gộp và áp vào Validation/Test) chạy trên máy cục bộ vì chỉ tốn vài giây. Không chuỗi nào phải fallback sang Seasonal Naive.
+
+*Bảng 1. Các run của nghiên cứu chính. Nguồn: `results/full/runs/*/environment.json`.*
 
 <!-- TABLE:runs -->
 | run_id | split | origin | mô hình | SHA mã | CPU | Python |
 |---|---|---|---|---|---|---|
-| tes-20261115T090359Z-4cc19f7 | test | d_1913 | Seasonal Naive, Linear Regression, ETS, Croston, LightGBM, XGBoost | 4cc19f7 | 4 | 3.13.18 |
-| tes-20261115T095405Z-4994dda | test | d_1913 | CatBoost | 4994dda | 4 | 3.13.18 |
-| val-20261115T072831Z-20b22f7 | validation | d_1885 | Seasonal Naive, Linear Regression, ETS, Croston, LightGBM, XGBoost | 20b22f7 | 4 | 3.13.18 |
-| val-20261115T073404Z-20b22f7 | validation | d_1885 | CatBoost | 20b22f7 | 4 | 3.13.18 |
-| val-20261116T015146Z-2ee03bd | validation | d_1885 | croston_sba, lightgbm_noprice, lightgbm_tuned | 2ee03bd | 4 | 3.13.18 |
-| val-20261116T064518Z-c4f7409-stack | validation | d_1885 | stacking | c4f7409 | máy cục bộ | n/a |
+| tes-20261118T054917Z-c8ba5c8 | test | d_1913 | Seasonal Naive, ETS, Croston SBA, LightGBM | c8ba5c8 | 4 | 3.13.18 |
+| tes-20261118T083859Z-867b564-stack | test | d_1913 | Stacking lai | 867b564 | máy cục bộ | n/a |
+| val-20261118T054238Z-c8ba5c8 | validation | d_1885 | Seasonal Naive, ETS, Croston SBA, LightGBM | c8ba5c8 | 4 | 3.13.18 |
+| val-20261118T083718Z-867b564-stack | validation | d_1885 | Stacking lai | 867b564 | máy cục bộ | n/a |
 <!-- /TABLE -->
 
-Hai run Validation (`…072831Z`, `…073404Z`) cùng SHA mã và cùng cấu hình; CatBoost tách riêng vì chậm. Hai run Test (`4cc19f7`, `4994dda`) có `src/` và `scripts/run_experiment.py` giống hệt thẻ `config-freeze` (`results/pre_rewrite_sha_map.csv`). Trường `data_sha256` của bốn run lõi và run tùy chọn đầu tiên **rỗng**: mã lúc đó chỉ băm `data/raw` hoặc `--data-dir` còn Kaggle đọc `/kaggle/input`, nên bản thân các run không chứng minh đã dùng đúng bộ CSV gốc. Bằng chứng thay thế (yếu hơn) là số Validation/Test tính lại độc lập từ dữ liệu cục bộ khớp bảng (lệch tối đa 5e-5), tức nhãn khớp; giá và lịch không được kiểm theo cách này. Mã đã sửa để các run sau băm cả năm CSV tại thư mục thực sự đọc. Seed 42, hash manifest mẫu `68d7acc8…` (SHA-256 của danh sách `series_id` đã sắp xếp), trường `git_dirty` của các run lõi bằng `true` chỉ vì thư mục kết quả được tạo trước khi kiểm tra git (không phải mã bị sửa dở), không có chuỗi nào phải fallback sang Seasonal Naive ở cả Validation và Test (`diag_fallbacks.csv` không được tạo). Các phần tùy chọn (Optuna, stacking, SBA, ablation) được mô tả ở mục 3.10; cấu hình lõi ở `configs/freeze.yaml` không đổi.
+### 4.3. Kết quả tổng thể (Q1, Q5)
 
-**Kết quả Validation (d_1886–d_1913, 28 ngày; chọn cấu hình, không tuning).**
-
-*Bảng 2. Validation — macro trên 1.200 chuỗi; ngoặc "so Seasonal Naive" là thay đổi tương đối (âm = tốt hơn). Nguồn: `results/tables/validation/validation_overall.csv`; runtime: `validation_runtime_tradeoff.csv`.*
+*Bảng 2. Validation (d_1886–d_1913) — macro trên 30.490 chuỗi. Nguồn: `results/full/tables/validation/validation_overall.csv`.*
 
 <!-- TABLE:val_overall -->
-| Mô hình | MAE (macro) | RMSE (macro) | RMSSE (macro) | R² (macro) | So Seasonal Naive (MAE) | So Seasonal Naive (RMSSE) | fit+predict (s) |
-|---|---|---|---|---|---|---|---|
-| Seasonal Naive | 1,162 | 1,664 | 0,978 | −1,656 | +0,0% | +0,0% | 0,0 |
-| Linear Regression | 0,979 | 1,293 | 0,759 | −0,278 | −15,8% | −22,4% | 24,4 |
-| ETS | 0,966 | 1,273 | 0,729 | −0,157 | −16,9% | −25,4% | 1018,3 |
-| Croston | 0,995 | 1,292 | 0,745 | −0,246 | −14,4% | −23,8% | 1,4 |
-| LightGBM | 0,988 | 1,280 | 0,750 | −0,247 | −15,0% | −23,3% | 10,4 |
-| XGBoost | 0,990 | 1,286 | 0,750 | −0,255 | −14,8% | −23,3% | 15,6 |
-| CatBoost | 1,005 | 1,285 | 0,763 | −0,317 | −13,5% | −22,0% | 2092,1 |
+| Mô hình | MAE (macro) | RMSE (macro) | RMSSE (macro) | R² (macro) | So Seasonal Naive (RMSSE) | fit+predict (s) |
+|---|---|---|---|---|---|---|
+| Seasonal Naive | 1,232 | 1,740 | 0,976 | −1,535 | +0,0% | 0,7 |
+| ETS | 1,039 | 1,346 | 0,737 | −0,242 | −24,5% | 34832,2 |
+| Croston SBA | 1,085 | 1,391 | 0,759 | −0,345 | −22,2% | 8,7 |
+| LightGBM | 1,063 | 1,354 | 0,757 | −0,346 | −22,4% | 255,0 |
+| Stacking lai | 1,046 | 1,332 | 0,738 | −0,243 | −24,4% | 15,2 |
 <!-- /TABLE -->
 
-**Kết quả Test (d_1914–d_1941, 28 ngày; refit d_1–d_1913; chạy một lần sau tag `config-freeze`).**
-
-*Bảng 3. Test — cùng mẫu, cùng chính sách. Nguồn: `results/tables/test/test_overall.csv`.*
+*Bảng 3. Test (d_1914–d_1941, refit trên d_1–d_1913, chạy một lần sau tag `config-freeze`). Nguồn: `results/full/tables/test/test_overall.csv`. Thời gian của stacking chỉ gồm bước khớp bộ gộp (mục 4.5).*
 
 <!-- TABLE:test_overall -->
-| Mô hình | MAE (macro) | RMSE (macro) | RMSSE (macro) | R² (macro) | So Seasonal Naive (MAE) | So Seasonal Naive (RMSSE) | fit+predict (s) |
-|---|---|---|---|---|---|---|---|
-| Seasonal Naive | 1,157 | 1,645 | 0,997 | −1,501 | +0,0% | +0,0% | 0,0 |
-| Linear Regression | 0,980 | 1,272 | 0,776 | −0,218 | −15,3% | −22,2% | 25,2 |
-| ETS | 0,953 | 1,241 | 0,752 | −0,130 | −17,6% | −24,6% | 1026,2 |
-| Croston | 0,986 | 1,267 | 0,764 | −0,164 | −14,8% | −23,4% | 1,4 |
-| LightGBM | 0,984 | 1,262 | 0,768 | −0,182 | −14,9% | −23,0% | 9,7 |
-| XGBoost | 0,987 | 1,267 | 0,768 | −0,181 | −14,7% | −22,9% | 15,7 |
-| CatBoost | 0,984 | 1,260 | 0,768 | −0,189 | −15,0% | −23,0% | 2080,3 |
+| Mô hình | MAE (macro) | RMSE (macro) | RMSSE (macro) | R² (macro) | So Seasonal Naive (RMSSE) | fit+predict (s) |
+|---|---|---|---|---|---|---|
+| Seasonal Naive | 1,244 | 1,752 | 0,997 | −1,371 | +0,0% | 0,7 |
+| ETS | 1,040 | 1,360 | 0,758 | −0,184 | −23,9% | 35121,1 |
+| Croston SBA | 1,075 | 1,393 | 0,769 | −0,422 | −22,9% | 10,5 |
+| LightGBM | 1,079 | 1,386 | 0,775 | −0,422 | −22,3% | 228,4 |
+| Stacking lai | 1,050 | 1,351 | 0,757 | −0,235 | −24,1% | 12,1 |
 <!-- /TABLE -->
 
-*Bảng 4. Macro so với gộp (pooled), số chuỗi không xác định và dự báo âm. Test.*
+*Bảng 4. Macro so với gộp (pooled) và số chuỗi có $R^2$ không xác định (Test).*
 
 <!-- TABLE:test_pooled -->
 | Mô hình | RMSE macro | RMSE gộp | MAE macro | R² không xác định (số chuỗi) | RMSSE không xác định (số chuỗi) |
 |---|---|---|---|---|---|
-| Seasonal Naive | 1,645 | 2,561 | 1,157 | 37 | 0 |
-| Linear Regression | 1,272 | 1,961 | 0,980 | 37 | 0 |
-| ETS | 1,241 | 1,913 | 0,953 | 37 | 0 |
-| Croston | 1,267 | 1,949 | 0,986 | 37 | 0 |
-| LightGBM | 1,262 | 1,939 | 0,984 | 37 | 0 |
-| XGBoost | 1,267 | 1,964 | 0,987 | 37 | 0 |
-| CatBoost | 1,260 | 1,929 | 0,984 | 37 | 0 |
+| Seasonal Naive | 1,752 | 2,677 | 1,244 | 812 | 0 |
+| ETS | 1,360 | 2,174 | 1,040 | 812 | 0 |
+| Croston SBA | 1,393 | 2,232 | 1,075 | 812 | 0 |
+| LightGBM | 1,386 | 2,209 | 1,079 | 812 | 0 |
+| Stacking lai | 1,351 | 2,124 | 1,050 | 812 | 0 |
 <!-- /TABLE -->
 
 <!-- TABLE:test_negraw -->
-| Mô hình | Số dự báo âm trước khi cắt về 0 (trên 33.600) |
+| Mô hình | Số dự báo âm trước khi cắt về 0 (trên 853.720) |
 |---|---|
 | Seasonal Naive | 0 |
-| Linear Regression | 2032 |
-| ETS | 474 |
-| Croston | 0 |
+| ETS | 16474 |
+| Croston SBA | 0 |
 | LightGBM | 0 |
-| XGBoost | 22 |
-| CatBoost | 6 |
+| Stacking lai | 0 |
 <!-- /TABLE -->
 
-**Trả lời Q1 — so với Seasonal Naive.** Cả sáu mô hình còn lại giảm macro-RMSSE khoảng 22–25% so với Seasonal Naive trên Test (Bảng 3) và Validation (Bảng 2); Seasonal Naive có RMSSE gần 1, tức sai số của nó trên Test cùng cỡ với mẫu số của RMSSE (sai số dự báo naïve một bước trên lịch sử Train), không phải một phép so trực tiếp với dự báo naïve trên Test. Tỷ lệ chuỗi mà mô hình có MAE thấp hơn Seasonal Naive chỉ khoảng 58–62% (Bảng 6), nghĩa là cải thiện đến từ sai số trung bình giảm rõ hơn là từ việc thắng trên mọi chuỗi. R² macro đều âm (−0,13 đến −0,22 trên Test; Seasonal Naive −1,50): với chuỗi thưa, 28 ngày đánh giá có phương sai nhỏ nên mọi mô hình đều kém mốc trung bình của nhãn; 37 chuỗi Test (57 trên Validation) có nhãn hằng nên R² không xác định và bị loại khỏi trung bình.
+**Trả lời Q1 — so với Seasonal Naive.** Cả bốn mô hình giảm macro-RMSSE khoảng 22–24% so với Seasonal Naive trên Test (Bảng 3) và Validation (Bảng 2). Seasonal Naive có RMSSE gần 1, tức sai số của nó trên giai đoạn đánh giá cùng cỡ với mẫu số của RMSSE. Tỷ lệ chuỗi có MAE thấp hơn Seasonal Naive chỉ 60–65% (Bảng 8), nên cải thiện đến từ việc giảm sai số trung bình hơn là thắng trên mọi chuỗi. R² macro đều âm (Bảng 3): 28 ngày đánh giá của chuỗi thưa có phương sai nhỏ nên mọi mô hình đều kém mốc trung bình của nhãn; 812 chuỗi Test (1.587 trên Validation) có nhãn hằng nên R² không xác định.
 
-**Thứ hạng và độ chắc chắn.** Theo macro-RMSSE, ETS đứng đầu ở cả Validation (0,729) và Test (0,752), Croston thứ hai về điểm ước lượng ở cả hai (0,745; 0,764; chênh lệch so với LightGBM không có ý nghĩa, xem khoảng tin cậy bootstrap bên dưới) và Seasonal Naive cuối cùng. Giữa hai đầu mút này, Linear Regression, LightGBM, XGBoost và CatBoost đổi thứ tự giữa hai cửa sổ: ở Validation CatBoost (0,763) và Linear Regression (0,759) kém LightGBM/XGBoost (0,750), còn ở Test CatBoost (0,768) ngang LightGBM (0,768) và XGBoost (0,768), và Linear Regression (0,776) thấp nhất trong nhóm. Khoảng cách trong nhóm ETS–Croston–boosting rất nhỏ (không quá 0,02 RMSSE ở Test) và chỉ dựa trên một cửa sổ 28 ngày, nên nhóm không khẳng định thứ hạng chi tiết giữa chúng là bền vững; kết luận đủ vững chỉ là ETS/Croston/boosting tốt hơn rõ rệt so với Seasonal Naive, và ETS nhỉnh hơn nhất quán ở cả hai cửa sổ.
+**Thứ hạng và độ chắc chắn.** Trên Test, stacking lai (0,757) và ETS (0,758) dẫn đầu, Croston SBA (0,769) và LightGBM (0,775) theo sau. Với 30.490 chuỗi, khoảng tin cậy bootstrap rất hẹp (Bảng 5, 6): stacking thấp hơn ETS 0,0015 với khoảng không chứa 0, Croston SBA thấp hơn LightGBM 0,0057. Tuy vậy, trên Validation thứ tự hai cặp này đảo lại: ETS thấp hơn stacking 0,0009 (khoảng tin cậy sát 0) và LightGBM thấp hơn Croston SBA 0,0020 (khoảng không chứa 0). Khoảng tin cậy chỉ phản ánh biến thiên giữa các chuỗi trong *một* cửa sổ 28 ngày, nên các chênh lệch cỡ 0,001–0,006 không được coi là bền vững; kết luận vững là bốn mô hình tốt hơn rõ Seasonal Naive, cặp {ETS, stacking} tốt hơn cặp {Croston SBA, LightGBM} khoảng 0,01–0,02 ở cả hai cửa sổ.
 
-Tiêu chí quyết định xếp hạng: macro-RMSSE trung bình theo chuỗi nên chủ yếu phản ánh các chuỗi doanh số thấp. RMSE *gộp* (nhạy với các chuỗi doanh số lớn) không cho thứ hạng ổn định: ở Validation ETS có RMSE gộp cao nhất (2,169) trong khi CatBoost (2,039) và LightGBM (2,059) thấp hơn, còn ở Test ETS lại thấp nhất (1,913; CatBoost 1,929, LightGBM 1,939, Croston 1,949, Linear Regression 1,961, XGBoost 1,964; Bảng 4). Vì vậy nhóm không kết luận rằng mô hình global vượt ETS trên các chuỗi lớn; sự đảo chiều giữa hai cửa sổ cho thấy các chênh lệch này nằm trong biến động của một cửa sổ 28 ngày.
-
-**Khoảng tin cậy bootstrap theo chuỗi.** Để tránh chỉ dựa vào điểm ước lượng, nhóm lấy lại mẫu 1.200 chuỗi có hoàn lại 2.000 lần (seed 42; `scripts/bootstrap_ci.py`) và tính lại macro-RMSSE. Khoảng chỉ phản ánh biến thiên giữa các chuỗi trong *một* cửa sổ 28 ngày; các chuỗi cùng cửa hàng hoặc cùng ngày không độc lập nên khoảng thực tế rộng hơn. Các khoảng riêng lẻ chồng lên nhau nhiều, nhưng chênh lệch *cặp* (cùng chuỗi, cùng lần lấy mẫu) hẹp hơn:
-
-*Bảng 3b. Test: macro-RMSSE, khoảng tin cậy 95% bootstrap và chênh lệch cặp so với ETS (dương = kém ETS). Nguồn: `results/tables/test/test_bootstrap_ci.csv`; Validation: `validation_bootstrap_ci.csv`.*
+*Bảng 5. Test: macro-RMSSE, khoảng tin cậy 95% bootstrap (2.000 lần lấy lại 30.490 chuỗi, seed 42) và chênh lệch cặp so với ETS (dương = kém ETS). Nguồn: `results/full/tables/test/test_bootstrap_ci.csv`.*
 
 <!-- TABLE:test_bootstrap -->
 | Mô hình | RMSSE (macro) | KTC 95% | Chênh so với ETS | KTC 95% của chênh lệch |
 |---|---|---|---|---|
-| Seasonal Naive | 0,997 | [0,971; 1,023] | +0,2449 | [+0,2294; +0,2619] |
-| Linear Regression | 0,776 | [0,758; 0,793] | +0,0240 | [+0,0196; +0,0288] |
-| ETS | 0,752 | [0,733; 0,770] | — | — |
-| Croston | 0,764 | [0,745; 0,781] | +0,0115 | [+0,0073; +0,0160] |
-| LightGBM | 0,768 | [0,750; 0,785] | +0,0160 | [+0,0116; +0,0206] |
-| XGBoost | 0,768 | [0,750; 0,785] | +0,0162 | [+0,0117; +0,0210] |
-| CatBoost | 0,768 | [0,750; 0,785] | +0,0157 | [+0,0114; +0,0202] |
+| Seasonal Naive | 0,997 | [0,992; 1,002] | +0,2388 | [+0,2359; +0,2417] |
+| ETS | 0,758 | [0,755; 0,762] | — | — |
+| Croston SBA | 0,769 | [0,765; 0,773] | +0,0107 | [+0,0093; +0,0121] |
+| LightGBM | 0,775 | [0,771; 0,779] | +0,0164 | [+0,0152; +0,0177] |
+| Stacking lai | 0,757 | [0,753; 0,761] | −0,0015 | [−0,0020; −0,0009] |
 <!-- /TABLE -->
 
-*Bảng 3c. Chênh lệch cặp giữa các mô hình gần nhau (âm = mô hình thứ nhất tốt hơn). Nguồn: `*_bootstrap_pairs.csv`.*
+*Bảng 6. Chênh lệch cặp giữa các mô hình gần nhau (âm = mô hình thứ nhất tốt hơn). Nguồn: `*_bootstrap_pairs.csv`.*
 
 <!-- TABLE:bootstrap_pairs -->
 | Tập | Cặp (thứ nhất − thứ hai) | Chênh | KTC 95% | Khoảng chứa 0 |
 |---|---|---|---|---|
-| Validation | Croston − LightGBM | −0,0049 | [−0,0117; +0,0020] | có |
-| Validation | Croston − Linear Regression | −0,0139 | [−0,0211; −0,0067] | không |
-| Validation | LightGBM − XGBoost | −0,0004 | [−0,0029; +0,0022] | có |
-| Validation | LightGBM − CatBoost | −0,0135 | [−0,0163; −0,0108] | không |
-| Validation | XGBoost − CatBoost | −0,0131 | [−0,0160; −0,0101] | không |
-| Test | Croston − LightGBM | −0,0045 | [−0,0096; +0,0005] | có |
-| Test | Croston − Linear Regression | −0,0124 | [−0,0177; −0,0069] | không |
-| Test | LightGBM − XGBoost | −0,0002 | [−0,0020; +0,0016] | có |
-| Test | LightGBM − CatBoost | +0,0003 | [−0,0015; +0,0020] | có |
-| Test | XGBoost − CatBoost | +0,0005 | [−0,0014; +0,0024] | có |
+| Validation | Croston SBA − LightGBM | +0,0020 | [+0,0005; +0,0036] | không |
+| Validation | Stacking lai − LightGBM | −0,0191 | [−0,0201; −0,0180] | không |
+| Validation | Stacking lai − Croston SBA | −0,0211 | [−0,0226; −0,0198] | không |
+| Test | Croston SBA − LightGBM | −0,0057 | [−0,0070; −0,0045] | không |
+| Test | Stacking lai − LightGBM | −0,0179 | [−0,0187; −0,0171] | không |
+| Test | Stacking lai − Croston SBA | −0,0122 | [−0,0132; −0,0111] | không |
 <!-- /TABLE -->
 
-ETS thấp hơn mọi mô hình khác với khoảng tin cậy chênh lệch không chứa 0 ở cả Validation và Test (Test: Croston +0,0115, ba mô hình cây khoảng +0,016, Linear Regression +0,024), nên "ETS nhỉnh hơn" có cơ sở ở mức mẫu chuỗi này, dù độ lớn nhỏ. Giữa các mô hình còn lại: Croston không khác LightGBM có ý nghĩa (khoảng chứa 0 ở cả hai tập), nên thứ hai của Croston chỉ là điểm ước lượng; LightGBM và XGBoost không phân biệt được; CatBoost kém LightGBM và XGBoost rõ ở Validation (khoảng cách 0,013) nhưng ba mô hình cây không phân biệt được ở Test. Vì vậy thứ hạng trong nhóm boosting không bền vững giữa hai cửa sổ.
+**Trả lời Q5 — WRMSSE và các cấp tổng hợp.** Bảng 6a và 6b cho WRMSSE và RMSSE có trọng số ở bốn cấp tiêu biểu. Thứ hạng đổi mạnh so với macro-RMSSE cấp đáy: Croston SBA tốt ở cấp sản phẩm–cửa hàng (cấp 12: 0,862, gần ETS và LightGBM) nhưng kém nhất ở mọi cấp tổng hợp (cấp 1–9: 1,11–1,22 trên Test, tệ hơn cả Seasonal Naive), vì dự báo phẳng của từng chuỗi khi cộng lại vẫn phẳng, mất hẳn chu kỳ tuần của doanh số tổng. Ngược lại, LightGBM — kém nhất trong bốn mô hình ở cấp đáy theo macro-RMSSE trên Test — lại rất tốt ở các cấp tổng hợp (cấp 1: 0,610 trên Test, 0,330 trên Validation), vì nó học chung mức và mùa vụ của mọi chuỗi. Stacking lai tận dụng cả hai: WRMSSE Test 0,668, thấp nhất, với cấp 1 bằng 0,505 và cấp 12 bằng 0,834. Trên Validation, LightGBM có WRMSSE thấp nhất (0,591) và stacking xếp thứ hai (0,715); bộ gộp được khớp theo sai số bình phương ở cấp đáy nên không tối ưu trực tiếp cho các cấp tổng hợp. Cửa sổ Test của đồ án trùng giai đoạn chấm bảng xếp hạng công khai của M5, nhưng điểm ở đây không phải bài nộp thi.
 
-**Trả lời Q2 — theo nhóm nhu cầu, ngành hàng và bang.**
+*Bảng 6a. WRMSSE (Validation) và RMSSE có trọng số ở bốn cấp. Nguồn: `results/full/tables/validation/validation_wrmsse.csv`.*
 
-*Bảng 5a. RMSSE macro theo nhóm tỷ lệ ngày 0 trên Train (Test). Nhóm: ≤0,5; 0,5–0,8; >0,8.*
+<!-- TABLE:val_wrmsse -->
+| Mô hình | WRMSSE | Cấp 1 (tổng) | Cấp 3 (cửa hàng) | Cấp 9 (cửa hàng × nhóm hàng) | Cấp 12 (sản phẩm × cửa hàng) |
+|---|---|---|---|---|---|
+| Seasonal Naive | 0,923 | 0,668 | 0,825 | 1,029 | 1,126 |
+| ETS | 0,724 | 0,527 | 0,649 | 0,795 | 0,865 |
+| Croston SBA | 1,121 | 1,206 | 1,134 | 1,156 | 0,873 |
+| LightGBM | 0,591 | 0,330 | 0,501 | 0,664 | 0,854 |
+| Stacking lai | 0,715 | 0,569 | 0,664 | 0,763 | 0,845 |
+<!-- /TABLE -->
+
+*Bảng 6b. WRMSSE (Test). Nguồn: `results/full/tables/test/test_wrmsse.csv` (đủ 12 cấp).*
+
+<!-- TABLE:test_wrmsse -->
+| Mô hình | WRMSSE | Cấp 1 (tổng) | Cấp 3 (cửa hàng) | Cấp 9 (cửa hàng × nhóm hàng) | Cấp 12 (sản phẩm × cửa hàng) |
+|---|---|---|---|---|---|
+| Seasonal Naive | 0,870 | 0,751 | 0,799 | 0,892 | 1,100 |
+| ETS | 0,760 | 0,687 | 0,731 | 0,790 | 0,845 |
+| Croston SBA | 1,095 | 1,186 | 1,144 | 1,118 | 0,862 |
+| LightGBM | 0,722 | 0,610 | 0,685 | 0,759 | 0,857 |
+| Stacking lai | 0,668 | 0,505 | 0,620 | 0,730 | 0,834 |
+<!-- /TABLE -->
+
+### 4.4. Theo nhóm nhu cầu, ngành hàng và bang (Q2)
+
+*Bảng 7a. RMSSE macro theo nhóm tỷ lệ ngày 0 trên Train (Test). Nhóm: ≤ 0,5 (6.530 chuỗi); 0,5–0,8 (12.053); > 0,8 (11.907).*
 
 <!-- TABLE:test_demand_class_rmsse -->
-| demand_class | Seasonal Naive | Linear Regression | ETS | Croston | LightGBM | XGBoost | CatBoost |
-|---|---|---|---|---|---|---|---|
-| high_zero(>0.8) | 1,034 | 0,814 | 0,780 | 0,785 | 0,806 | 0,804 | 0,804 |
-| low_zero(<=0.5) | 0,900 | 0,698 | 0,686 | 0,711 | 0,694 | 0,696 | 0,691 |
-| mid_zero(0.5-0.8] | 1,004 | 0,772 | 0,753 | 0,767 | 0,763 | 0,764 | 0,765 |
+| demand_class | Seasonal Naive | ETS | Croston SBA | LightGBM | Stacking lai |
+|---|---|---|---|---|---|
+| high_zero(>0.8) | 1,051 | 0,795 | 0,801 | 0,820 | 0,796 |
+| low_zero(<=0.5) | 0,918 | 0,708 | 0,730 | 0,725 | 0,705 |
+| mid_zero(0.5-0.8] | 0,987 | 0,750 | 0,759 | 0,757 | 0,746 |
 <!-- /TABLE -->
 
-*Bảng 5b. RMSSE macro theo ngành hàng (Test).*
+*Bảng 7b. RMSSE macro theo ngành hàng (Test).*
 
 <!-- TABLE:test_cat_rmsse -->
-| cat_id | Seasonal Naive | Linear Regression | ETS | Croston | LightGBM | XGBoost | CatBoost |
-|---|---|---|---|---|---|---|---|
-| FOODS | 0,992 | 0,800 | 0,784 | 0,792 | 0,795 | 0,799 | 0,795 |
-| HOBBIES | 0,964 | 0,742 | 0,711 | 0,719 | 0,732 | 0,729 | 0,728 |
-| HOUSEHOLD | 1,034 | 0,786 | 0,761 | 0,779 | 0,777 | 0,778 | 0,781 |
+| cat_id | Seasonal Naive | ETS | Croston SBA | LightGBM | Stacking lai |
+|---|---|---|---|---|---|
+| FOODS | 1,003 | 0,777 | 0,786 | 0,790 | 0,772 |
+| HOBBIES | 0,982 | 0,736 | 0,741 | 0,756 | 0,738 |
+| HOUSEHOLD | 0,997 | 0,745 | 0,761 | 0,764 | 0,747 |
 <!-- /TABLE -->
 
-*Bảng 5c. RMSSE macro theo bang (Test).*
+*Bảng 7c. RMSSE macro theo bang (Test).*
 
 <!-- TABLE:test_state_rmsse -->
-| state | Seasonal Naive | Linear Regression | ETS | Croston | LightGBM | XGBoost | CatBoost |
-|---|---|---|---|---|---|---|---|
-| CA | 1,020 | 0,800 | 0,779 | 0,796 | 0,792 | 0,795 | 0,793 |
-| TX | 0,958 | 0,743 | 0,715 | 0,724 | 0,733 | 0,732 | 0,732 |
-| WI | 1,005 | 0,776 | 0,753 | 0,760 | 0,771 | 0,768 | 0,769 |
+| state | Seasonal Naive | ETS | Croston SBA | LightGBM | Stacking lai |
+|---|---|---|---|---|---|
+| CA | 1,013 | 0,769 | 0,784 | 0,784 | 0,768 |
+| TX | 0,954 | 0,729 | 0,736 | 0,748 | 0,728 |
+| WI | 1,019 | 0,774 | 0,783 | 0,789 | 0,771 |
 <!-- /TABLE -->
 
-Ở nhóm chuỗi ít số 0 (≤ 0,5), các mô hình sát nhau (0,686–0,711 trên Test): ETS dẫn nhẹ, Croston kém nhất nhóm vì dự báo phẳng không bắt chu kỳ tuần. Ở nhóm gián đoạn mạnh (> 0,8), ETS và Croston (0,780 và 0,785) tốt hơn rõ LightGBM, XGBoost, CatBoost và Linear Regression (0,804–0,814): khoảng cách tăng theo mức gián đoạn. Theo ngành hàng, HOBBIES có sai số chuẩn hóa thấp nhất và FOODS cao nhất ở hầu hết mô hình; theo bang, TX thấp nhất. Các khác biệt giữa nhóm là mô tả, không nên diễn giải nhân quả.
+Ở nhóm gián đoạn mạnh (> 0,8), ba mô hình cục bộ và stacking sát nhau (ETS 0,795, stacking 0,796, Croston SBA 0,801) và đều tốt hơn rõ LightGBM (0,820). Ở nhóm ít số 0 (≤ 0,5), stacking (0,705) và ETS (0,708) dẫn, LightGBM (0,725) đứng thứ ba và Croston SBA kém nhất (0,730) vì dự báo phẳng bỏ qua chu kỳ tuần, vốn rõ hơn ở hàng bán đều. Theo ngành hàng, HOBBIES có sai số chuẩn hóa thấp nhất, FOODS cao nhất; theo bang, TX thấp nhất. Các khác biệt giữa nhóm là mô tả, không diễn giải nhân quả.
 
-*Độ bền của phân nhóm.* Nhóm nhu cầu được cố định từ tỷ lệ ngày 0 trên toàn bộ d_1–d_1885 (không đổi sau khi Test mở, và là nhóm của mọi bảng "theo nhóm nhu cầu"), nên tính cả các ngày 0 *trước lần bán đầu tiên*: 944/1.200 chuỗi có đoạn 0 đầu (trung vị 441 ngày) và mọi ô thiếu giá đều là bán 0 (hàng chưa niêm yết). Tính lại chỉ sau lần bán đầu tiên (cùng quy ước bỏ số 0 đầu của RMSSE), tỷ lệ 0 trung bình là 0,625 thay vì 0,701, 252 chuỗi (21%) đổi nhóm và nhóm > 0,8 giảm từ 520 xuống 355 chuỗi (165 chuỗi chuyển sang nhóm thấp hơn): phân nhóm hiện tại thổi phồng mức gián đoạn. Bảng 5d giữ nhóm đã khóa nhưng cho thấy kết luận theo nhóm không đổi: ở nhóm > 0,8 ETS (0,796) và Croston (0,797) vẫn tốt hơn các mô hình cây (0,824–0,828), khoảng cách còn lớn hơn (khoảng 0,03 so với 0,025). Nguồn: `scripts/robustness_classes.py`, `results/tables/test/test_by_demand_class_after_first_sale.csv`.
+*Độ bền của phân nhóm.* Nhóm nhu cầu tính từ tỷ lệ ngày 0 trên toàn bộ d_1–d_1885 nên gồm cả các ngày 0 *trước lần bán đầu tiên*: 23.511/30.490 chuỗi có đoạn 0 đầu (trung vị 452 ngày). Tính lại chỉ sau lần bán đầu tiên, 7.341 chuỗi (24%) đổi nhóm và nhóm > 0,8 giảm từ 11.907 xuống 7.486 chuỗi. Bảng 7d cho thấy kết luận không đổi: ở nhóm > 0,8 tính lại, ETS (0,800), stacking (0,805) và Croston SBA (0,806) vẫn tốt hơn LightGBM (0,837).
 
-*Bảng 5d. RMSSE macro theo nhóm tính sau lần bán đầu tiên (Test; kiểm tra độ bền, không thay nhóm đã khóa).*
+*Bảng 7d. RMSSE macro theo nhóm tính sau lần bán đầu tiên (Test; kiểm tra độ bền). Nguồn: `scripts/robustness_classes.py`.*
 
 <!-- TABLE:test_class_after_first_sale -->
-| Nhóm (sau lần bán đầu tiên) | Số chuỗi | Seasonal Naive | Linear Regression | ETS | Croston | LightGBM | XGBoost | CatBoost |
-|---|---|---|---|---|---|---|---|---|
-| high_zero(>0.8) | 355 | 1,068 | 0,841 | 0,796 | 0,797 | 0,828 | 0,824 | 0,827 |
-| low_zero(<=0.5) | 340 | 0,928 | 0,714 | 0,704 | 0,724 | 0,709 | 0,712 | 0,708 |
-| mid_zero(0.5-0.8] | 505 | 0,994 | 0,772 | 0,753 | 0,767 | 0,765 | 0,767 | 0,767 |
+| Nhóm (sau lần bán đầu tiên) | Số chuỗi | Seasonal Naive | ETS | Croston SBA | LightGBM | Stacking lai |
+|---|---|---|---|---|---|---|
+| high_zero(>0.8) | 7486 | 1,062 | 0,800 | 0,806 | 0,837 | 0,805 |
+| low_zero(<=0.5) | 9919 | 0,942 | 0,728 | 0,745 | 0,740 | 0,723 |
+| mid_zero(0.5-0.8] | 13085 | 1,002 | 0,758 | 0,766 | 0,765 | 0,755 |
 <!-- /TABLE -->
 
-*Hình 1. RMSSE theo nhóm nhu cầu (Test), `results/figures/test/test_rmsse_by_demand_class.png`.*
+![RMSSE theo nhóm nhu cầu](../results/full/figures/test/test_rmsse_by_demand_class.png)
 
-![RMSSE theo nhóm nhu cầu](../results/figures/test/test_rmsse_by_demand_class.png)
+*Hình 1. RMSSE theo nhóm nhu cầu (Test).*
 
-*Bảng 6. Tỷ lệ chuỗi mà mô hình có MAE thấp hơn Seasonal Naive và chênh lệch trung vị (Test).*
+*Bảng 8. Tỷ lệ chuỗi có MAE thấp hơn Seasonal Naive và chênh lệch trung vị (Test).*
 
 <!-- TABLE:test_winrate -->
-| Mô hình | win_rate_vs_snaive | tie_rate | median_mae_diff |
+| Mô hình | Tỷ lệ chuỗi thắng Seasonal Naive | Tỷ lệ hòa | Chênh MAE trung vị |
 |---|---|---|---|
-| Linear Regression | 0,586 | 0,000 | −0,056 |
-| ETS | 0,621 | 0,005 | −0,075 |
-| Croston | 0,605 | 0,007 | −0,067 |
-| LightGBM | 0,580 | 0,000 | −0,050 |
-| XGBoost | 0,585 | 0,000 | −0,050 |
-| CatBoost | 0,578 | 0,000 | −0,047 |
+| ETS | 0,650 | 0,004 | −0,085 |
+| Croston SBA | 0,641 | 0,006 | −0,087 |
+| LightGBM | 0,600 | 0,000 | −0,067 |
+| Stacking lai | 0,630 | 0,000 | −0,079 |
 <!-- /TABLE -->
 
-**Theo thứ trong tuần và horizon.** Tất cả mô hình sai nhiều hơn vào Thứ Bảy và Chủ nhật (ngày bán cao nên sai số tuyệt đối lớn), và Seasonal Naive sai nhiều nhất. Sai số tăng từ tuần 1 đến tuần 3 rồi giảm nhẹ ở tuần 4 (MAE trung bình theo tuần của ETS: 0,907; 0,964; 0,983; 0,958; mọi mô hình đều giảm ở tuần thứ tư). ETS có MAE thấp nhất ở 19/28 horizon (Bảng 8 chỉ liệt kê năm horizon, Hình 2 vẽ đủ 28; nguồn `results/tables/test/test_mae_by_horizon.csv`); ở horizon 14, Linear Regression (1,007), LightGBM (1,018), Croston (1,021) và XGBoost (1,022) thấp hơn ETS (1,043), còn CatBoost cao hơn (1,062).
+**Theo thứ trong tuần và horizon.** Mọi mô hình sai nhiều hơn vào thứ Bảy và Chủ nhật (ngày bán cao nên sai số tuyệt đối lớn), Seasonal Naive sai nhiều nhất (Bảng 9). Sai số tăng từ tuần 1 đến tuần 3 rồi giảm ở tuần 4 (MAE trung bình theo tuần của ETS: 0,969; 1,049; 1,093; 1,047). ETS có MAE gộp thấp nhất ở 22/28 horizon (`test_mae_by_horizon.csv`); Croston SBA thấp nhất ở horizon 14.
 
-*Bảng 7. MAE gộp theo thứ trong tuần (Test).*
+*Bảng 9. MAE gộp theo thứ trong tuần (Test).*
 
 <!-- TABLE:test_weekday -->
-| weekday | Seasonal Naive | Linear Regression | ETS | Croston | LightGBM | XGBoost | CatBoost |
-|---|---|---|---|---|---|---|---|
-| Monday | 1,163 | 0,956 | 0,928 | 0,967 | 0,974 | 0,965 | 0,967 |
-| Tuesday | 1,104 | 0,908 | 0,884 | 0,936 | 0,920 | 0,921 | 0,923 |
-| Wednesday | 1,032 | 0,891 | 0,890 | 0,939 | 0,909 | 0,905 | 0,911 |
-| Thursday | 1,054 | 0,869 | 0,877 | 0,926 | 0,886 | 0,892 | 0,882 |
-| Friday | 1,125 | 0,956 | 0,922 | 0,941 | 0,967 | 0,976 | 0,964 |
-| Saturday | 1,294 | 1,140 | 1,069 | 1,081 | 1,114 | 1,132 | 1,110 |
-| Sunday | 1,328 | 1,140 | 1,101 | 1,110 | 1,119 | 1,115 | 1,129 |
+| Thứ | Seasonal Naive | ETS | Croston SBA | LightGBM | Stacking lai |
+|---|---|---|---|---|---|
+| Monday | 1,239 | 1,011 | 1,048 | 1,061 | 1,025 |
+| Tuesday | 1,174 | 0,973 | 1,019 | 1,004 | 0,983 |
+| Wednesday | 1,147 | 0,973 | 1,014 | 0,992 | 0,979 |
+| Thursday | 1,130 | 0,970 | 1,010 | 0,990 | 0,978 |
+| Friday | 1,210 | 1,025 | 1,047 | 1,072 | 1,038 |
+| Saturday | 1,390 | 1,148 | 1,183 | 1,212 | 1,164 |
+| Sunday | 1,418 | 1,177 | 1,205 | 1,222 | 1,184 |
 <!-- /TABLE -->
 
-*Bảng 8. MAE gộp theo horizon (Test), một số ngày tiêu biểu.*
+*Bảng 10. MAE gộp theo horizon (Test), một số ngày tiêu biểu.*
 
 <!-- TABLE:test_horizon -->
-| horizon | Seasonal Naive | Linear Regression | ETS | Croston | LightGBM | XGBoost | CatBoost |
-|---|---|---|---|---|---|---|---|
-| 1 | 1,087 | 0,869 | 0,860 | 0,918 | 0,904 | 0,896 | 0,893 |
-| 7 | 1,273 | 1,091 | 1,021 | 1,054 | 1,060 | 1,062 | 1,050 |
-| 14 | 1,280 | 1,007 | 1,043 | 1,021 | 1,018 | 1,022 | 1,062 |
-| 21 | 1,393 | 1,226 | 1,177 | 1,172 | 1,181 | 1,177 | 1,182 |
-| 28 | 1,367 | 1,237 | 1,161 | 1,192 | 1,216 | 1,198 | 1,223 |
+| horizon | Seasonal Naive | ETS | Croston SBA | LightGBM | Stacking lai |
+|---|---|---|---|---|---|
+| 1 | 1,162 | 0,917 | 0,997 | 0,999 | 0,945 |
+| 7 | 1,356 | 1,119 | 1,182 | 1,213 | 1,145 |
+| 14 | 1,360 | 1,122 | 1,089 | 1,131 | 1,116 |
+| 21 | 1,517 | 1,278 | 1,330 | 1,324 | 1,280 |
+| 28 | 1,439 | 1,190 | 1,220 | 1,219 | 1,196 |
 <!-- /TABLE -->
 
-![MAE theo horizon](../results/figures/test/test_mae_by_horizon.png)
+![MAE theo horizon](../results/full/figures/test/test_mae_by_horizon.png)
 
 *Hình 2. MAE gộp theo horizon 1–28 (Test).*
 
-![Ví dụ thực tế và dự báo](../results/figures/test/test_actual_vs_pred_examples.png)
+![Ví dụ thực tế và dự báo](../results/full/figures/test/test_actual_vs_pred_examples.png)
 
-*Hình 3. Ví dụ thực tế–dự báo cho ba chuỗi chọn theo phân vị 10/50/90 của doanh số trung bình trên Train (quy tắc khách quan, không chọn chuỗi đẹp).*
+*Hình 3. Ví dụ thực tế–dự báo cho ba chuỗi chọn theo phân vị 10/50/90 của doanh số trung bình trên Train (quy tắc khách quan).*
 
-**Trả lời Q3 — độ chính xác và chi phí.** Thời gian ở Bảng 3 có phạm vi khác nhau: mô hình cục bộ là *tổng* thời gian fit+predict từng chuỗi (đơn luồng mỗi chuỗi), mô hình global là thời gian fit toàn mẫu với 4 luồng, nên không so trực tiếp. Trong phạm vi đó: Croston (khoảng 1,4 giây) và Seasonal Naive (dưới 0,1 giây) gần như không tốn; ETS mất khoảng 1.026 giây CPU tổng (khoảng 355 giây thực với 3 tiến trình), chậm hơn LightGBM hơn một bậc độ lớn (≈355 giây thực so với ≈10 giây với 4 luồng, tức khoảng 37 lần; không so tổng CPU của ETS với thời gian thực của LightGBM), để đổi lấy macro-RMSSE thấp hơn LightGBM khoảng 0,016 trên Test; CatBoost mặc định mất khoảng 2.090 giây (Validation) và 2.080 giây (Test). Croston cách ETS chỉ khoảng 0,012 RMSSE với chi phí gần bằng 0, nên là điểm cân bằng tốt nhất của lát cắt này. Chưa có chi phí tồn kho nên không kết luận về lợi ích kinh doanh.
+### 4.5. Chi phí tính toán (Q3)
 
-*Hình 4. Độ chính xác và thời gian (Test).*
+Trên Test, Seasonal Naive mất dưới 1 giây và Croston SBA khoảng 10 giây (tổng CPU của 30.490 chuỗi). LightGBM mất khoảng 228 giây fit+predict với 4 luồng, cộng khoảng 46 giây dựng bảng đặc trưng 56 triệu dòng. ETS là phần đắt nhất: khoảng 35.100 giây CPU tổng, tức khoảng 8.800 giây thực (gần 2,5 giờ) với 4 tiến trình; mỗi backtest cho stacking tốn thêm thời gian tương tự. Stacking chỉ tốn khoảng 12 giây cho bộ gộp, nhưng cần đủ ba mô hình cơ sở nên tổng chi phí của nó lớn hơn ETS. Đổi lại, trên Test stacking giảm WRMSSE từ 0,760 (ETS) xuống 0,668, còn Croston SBA đạt macro-RMSSE chỉ kém ETS 0,011 với chi phí gần bằng 0. Chưa có chi phí tồn kho nên không kết luận về lợi ích kinh doanh.
 
-![Đánh đổi độ chính xác và thời gian](../results/figures/test/test_accuracy_runtime.png)
+![Đánh đổi độ chính xác và thời gian](../results/full/figures/test/test_accuracy_runtime.png)
 
-**Trả lời Q4 — cơ chế.** 
+*Hình 4. Độ chính xác và thời gian (Test); điểm của stacking gồm cả chi phí ba mô hình cơ sở.*
 
-*Seasonal Naive* sao chép tuần cuối cùng kể cả nhiễu và số 0 của tuần đó, nên sai số của nó cùng cỡ với mẫu số của RMSSE (sai số của dự báo ngây thơ một bước trên lịch sử huấn luyện, mà Seasonal Naive cũng là một dự báo ngây thơ): RMSSE ≈ 1, kém nhất ở mọi nhóm.
+### 4.6. Cơ chế (Q4)
 
-*ETS* chọn toàn bộ cấu trúc có sai số cộng (A); ở run Validation: ETS(A,N,A) 598 chuỗi, ETS(A,N,N) 433, ETS(A,Ad,A) 104, ETS(A,Ad,N) 55, các cấu trúc có xu hướng thẳng rất ít (Bảng 9). α trung bình 0,055 (trung vị 0,034): làm mượt rất mạnh nên mức dự báo ổn định, phù hợp với chuỗi thưa nhiều nhiễu; γ gần 0 nghĩa là chu kỳ tuần được giữ gần như cố định, không đổi theo thời gian. Khoảng 41% chuỗi (496/1.200) không chọn thành phần mùa. 
+*ETS* chọn toàn bộ cấu trúc có sai số cộng: ETS(A,N,A) 52,4% số chuỗi, ETS(A,N,N) 35,8%, các cấu trúc có xu hướng tắt dần khoảng 11% (Bảng 11). α trung bình 0,066 (trung vị 0,041): làm mượt rất mạnh nên mức dự báo ổn định, phù hợp chuỗi thưa nhiều nhiễu; γ trung vị gần 0 nên chu kỳ tuần gần như cố định. Khoảng 40% chuỗi không chọn thành phần mùa. Dự báo cộng của ETS có thể âm: 16.474 điểm dự báo Test (1,9%) phải cắt về 0.
+
+*Bảng 11. Cấu trúc ETS được chọn (run Validation).*
 
 <!-- TABLE:ets_structure -->
 | Cấu trúc | Số chuỗi | Tỷ lệ |
 |---|---|---|
-| ETS(A,N,A) | 598 | 49,8% |
-| ETS(A,N,N) | 433 | 36,1% |
-| ETS(A,Ad,A) | 104 | 8,7% |
-| ETS(A,Ad,N) | 55 | 4,6% |
-| ETS(A,A,N) | 8 | 0,7% |
-| ETS(A,A,A) | 2 | 0,2% |
+| ETS(A,N,A) | 15.989 | 52,4% |
+| ETS(A,N,N) | 10.917 | 35,8% |
+| ETS(A,Ad,A) | 2.319 | 7,6% |
+| ETS(A,Ad,N) | 1.103 | 3,6% |
+| ETS(A,A,N) | 94 | 0,3% |
+| ETS(A,A,A) | 68 | 0,2% |
 
 *α/β/γ (số chuỗi có tham số, trung bình, trung vị, lớn nhất):*
 
 | thống kê | ets_alpha | ets_beta | ets_gamma |
 |---|---|---|---|
-| count | 1200 | 169 | 704 |
-| mean | 0,055 | 0,005 | 0,007 |
-| 50% | 0,034 | 0,002 | 0,000 |
-| max | 0,621 | 0,049 | 0,129 |
+| count | 30.490 | 3.584 | 18.376 |
+| mean | 0,066 | 0,004 | 0,007 |
+| 50% | 0,041 | 0,001 | 0,000 |
+| max | 1,000 | 0,060 | 0,283 |
 <!-- /TABLE -->
 
-*Croston* dự báo phẳng z/p nên không bắt được chu kỳ tuần; nó mạnh hơn Seasonal Naive nhờ làm mượt và hợp nhóm gián đoạn mạnh, nhưng ở nhóm ít số 0 thua ETS vì bỏ qua mùa vụ tuần. Ví dụ z, p (Validation):
+*Croston SBA* chỉ cập nhật khi có nhu cầu và dự báo phẳng $(1-\alpha/2)z/p$: hợp với hàng bán thưa (gần ETS ở nhóm > 0,8) nhưng không bắt chu kỳ tuần, nên kém ở hàng bán đều và đặc biệt ở các cấp tổng hợp (mục 4.3).
 
-<!-- TABLE:croston_zp -->
-| Chuỗi | z | p | ŷ = z/p |
-|---|---|---|---|
-| FOODS_3_756_TX_3 | 8,425 | 1,000 | 8,425 |
-| FOODS_3_714_TX_1 | 16,986 | 1,000 | 16,986 |
-| HOBBIES_2_063_WI_1 | 1,275 | 2,788 | 0,457 |
-| HOUSEHOLD_2_443_WI_1 | 1,349 | 2,795 | 0,483 |
-| FOODS_3_595_CA_3 | 1,602 | 165,342 | 0,010 |
-| FOODS_2_117_CA_4 | 1,767 | 511,152 | 0,003 |
-<!-- /TABLE -->
+*LightGBM* tập trung importance vào `rolling_mean_28` (68,5% gain) và `rolling_mean_7` (18,2%); giá, thứ trong tuần và tháng đóng góp nhỏ (Bảng 12, Hình 5). Dự báo chủ yếu là mức doanh số trượt điều chỉnh theo lịch, nên mô hình học tốt mặt bằng chung và chu kỳ của tổng (cấp tổng hợp) nhưng kém ETS ở từng chuỗi thưa. Importance chỉ cho biết đóng góp vào dự báo, không phải tác động nhân quả.
 
-*Linear Regression* dùng cùng đặc trưng với boosting nhưng chỉ thể hiện quan hệ tuyến tính: hệ số lớn nhất thuộc về `rolling_mean_28` (1,18) và `rolling_mean_7` (0,67) (biến đã chuẩn hóa), tức dự báo chủ yếu là mức doanh số gần đây; ngoài hai biến này hệ số âm lớn nhất là ngày Giáng sinh (−0,82, ngày doanh số gần như bằng 0) và các ngày trong tuần so với nhóm gốc, nên phần điều chỉnh còn lại chủ yếu đến từ lịch và sự kiện; nó cho nhiều dự báo âm nhất (6–7% số điểm trước khi cắt) nên kém ở nhóm gián đoạn mạnh.
-
-<!-- TABLE:lr_coef -->
-| Biến | Hệ số |
-|---|---|
-| num__rolling_mean_28 | 1,1803 |
-| cat__event_name_1_Christmas | −0,8197 |
-| num__rolling_mean_7 | 0,6731 |
-| cat__event_name_1_LaborDay | 0,3483 |
-| cat__wday_5 | −0,2814 |
-| num__lag_28 | 0,2766 |
-| cat__wday_4 | −0,2732 |
-| cat__wday_6 | −0,2700 |
-| cat__wday_3 | −0,2225 |
-| num__lag_35 | 0,1892 |
-| cat__wday_7 | −0,1747 |
-| cat__event_name_1_MemorialDay | 0,1718 |
-<!-- /TABLE -->
-
-*LightGBM, XGBoost, CatBoost* cộng dần cây, importance (Hình 5) tập trung vào `rolling_mean_28` (khoảng 70–76% gain ở LightGBM/XGBoost) và `rolling_mean_7`; giá (`sell_price`), tháng, thứ và nhóm cửa hàng đóng góp nhỏ ở LightGBM/XGBoost (CatBoost gán `sell_price` khoảng 10% theo thước đo khác, không so trực tiếp). Vì dự báo chủ yếu dựa vào mức doanh số trượt, các mô hình global chủ yếu tái tạo mức doanh số làm mượt và không vượt được ETS trên macro-RMSSE; ablation X02 trên Validation cho thấy bỏ nhóm giá và sự kiện không làm xấu LightGBM (macro-RMSSE 0,7479 so với 0,7496 khi giữ), tức thông tin này không đem lại cải thiện đo được trên một cửa sổ; chênh lệch 0,0017 nhỏ hơn mức dao động do phiên bản thư viện (giới hạn x) và chưa có Test. Importance chỉ cho biết đóng góp vào dự báo, không phải tác động nhân quả của giá hay SNAP.
+*Bảng 12. Importance (gain) của LightGBM (run Validation).*
 
 <!-- TABLE:importance -->
-| Mô hình | Top 5 đặc trưng (tỷ trọng) |
+| Đặc trưng | Tỷ trọng gain |
 |---|---|
-| LightGBM | rolling_mean_28 69,8%; rolling_mean_7 15,7%; lag_28 2,1%; sell_price 1,7%; rolling_std_28 1,6% |
-| XGBoost | rolling_mean_28 75,6%; rolling_mean_7 7,1%; rolling_std_28 1,9%; month 1,6%; store_id 1,6% |
-| CatBoost | rolling_mean_28 28,5%; rolling_mean_7 15,6%; sell_price 10,0%; lag_28 7,1%; lag_35 5,8% |
+| rolling_mean_28 | 68,5% |
+| rolling_mean_7 | 18,2% |
+| lag_28 | 3,9% |
+| sell_price | 1,9% |
+| wday | 1,3% |
+| rolling_std_28 | 1,2% |
+| month | 1,1% |
+| lag_35 | 0,9% |
 <!-- /TABLE -->
 
-![Importance](../results/figures/m10_feature_importance.png)
+![Importance](../results/full/figures/m10_feature_importance.png)
 
-*Hình 5. Importance của ba mô hình boosting (run Validation).*
+*Hình 5. Importance của LightGBM (run Validation).*
 
-![Minh họa cộng cây](../results/figures/m10_boosting_illustration.png)
+*Stacking lai* gán trọng số ETS 0,543, LightGBM 0,371, Croston SBA 0,138 và hệ số chặn gần 0 (Bảng 13). Tổng trọng số khoảng 1,05, tức bộ gộp gần như một trung bình có trọng số. ETS và Croston SBA tương quan cao nên SBA nhận trọng số nhỏ; phần LightGBM mang thông tin global và chu kỳ tuần mà hai mô hình cục bộ thiếu. Alpha được chọn ở biên dưới của lưới (0,1), nhưng sai số kiểm chéo giữa các alpha gần như bằng nhau (2,23535 đến 2,23536), nên lựa chọn này không ảnh hưởng kết quả. Chỉ có hai mốc backtest nên trọng số chưa được kiểm độ ổn định theo thời gian.
 
-*Hình 6. Sơ đồ minh họa cơ chế cộng cây trên dữ liệu giả; không phải cây học được trên M5.*
+*Bảng 13. Hệ số của bộ gộp stacking (khớp một lần trên dự báo ngoài mẫu trong Train, dùng chung cho Validation và Test).*
 
-**Giới hạn của thực nghiệm.** (i) Một cửa sổ Test 28 ngày, một mẫu 1.200 chuỗi (lệch về phía chuỗi gián đoạn mạnh hơn toàn tập). (ii) Khác biệt input giữa mô hình cục bộ (chỉ lịch sử doanh số) và global (thêm giá/lịch/SNAP/nhóm). (iii) Giả định giá ngày dự báo được biết trước. (iv) Khoảng tin cậy bootstrap (Bảng 3b, 3c) chỉ phản ánh biến thiên giữa các chuỗi trong một cửa sổ 28 ngày; các chuỗi không độc lập (cùng cửa hàng, cùng ngày) nên khoảng thực tế rộng hơn. (v) Runtime local và global khác phạm vi, phần cứng Kaggle không cố định giữa các lần. (vi) Phần tùy chọn mới có kết quả Validation (Optuna, SBA, ablation, stacking); Test của phần tùy chọn chưa chạy, và Test đó sẽ không còn là dữ liệu giữ lại hoàn toàn. (vii) Smoke reproduction chỉ kiểm tra chạy được trên tập nhỏ, không phải tái lập đầy đủ. (viii) Việc kiểm tra bằng AI không thay thế đối chiếu và review của các thành viên. (ix) Trường `git_sha` trong `environment.json` của các run (20b22f7, 4cc19f7, 4994dda) là SHA trước khi lịch sử commit được viết lại sang tiếng Việt và bỏ dòng đồng tác giả; các SHA này không còn trong nhánh chính; chỉ thẻ `archive/pre-rewrite-4994dda` còn trên GitHub (thẻ của 20b22f7 và 4cc19f7 đã gỡ vì lịch sử cũ có dòng đồng tác giả AI); bảng run → SHA cũ → commit tương đương hiện nay (cùng tree hash) ở `results/pre_rewrite_sha_map.csv`, và `src/` cùng `scripts/run_experiment.py` của cả ba SHA đã được kiểm giống hệt thẻ `config-freeze` bằng `git diff` trước khi gỡ; cây file giữ nguyên, và mã chạy mô hình của các run giống nhau (khác nhau chỉ ở các commit sau về notebook và công cụ báo cáo). (x) Dự báo XGBoost phụ thuộc phiên bản thư viện: chạy lại ở xgboost 3.2.0 (run Kaggle dùng 3.4.1) cho macro-RMSSE Validation 0,7493 thay vì 0,7500 và dự báo lệch trung bình 0,155 đơn vị; chênh lệch này đủ đảo thứ tự giữa XGBoost và LightGBM (0,7496), nên thứ hạng trong nhóm boosting không bền vững, và tái lập chính xác cần ghim đúng `requirements.txt` (chưa tự chạy được bản 3.4.1 vì cần Python ≥ 3.12; Thanh Tiền tái lập khớp bản đã lưu với bản ghim). (xi) LightGBM Tuned được chọn bằng nhãn Validation (chính cửa sổ dùng để báo điểm) và stacking dùng nó làm mô hình cơ sở nên thừa hưởng sự lạc quan này: điểm Validation của hai mô hình này không so sánh được với 7 mô hình lõi và chỉ Test (chưa chạy) mới là phép kiểm độc lập; chọn tham số bằng backtest bên trong Train là cách tránh vấn đề này nhưng chưa được làm. Bộ gộp stacking chọn α bằng leave-one-origin-out với chỉ hai mốc backtest nên thực chất là kiểm chéo 2 phần, kém tin cậy. Tuy vậy sai số kiểm chéo giữa các α chỉ chênh khoảng 0,15% (2,2331 ở α = 0,1 so với 2,2298 ở α = 1000), nên việc α rơi vào biên lưới gần như không ảnh hưởng kết quả. (xii) Phân nhóm nhu cầu tính cả ngày 0 trước lần bán đầu tiên (xem độ bền ở Bảng 5d); các khoảng tin cậy bootstrap chỉ phản ánh biến thiên giữa chuỗi trong một cửa sổ.
+<!-- TABLE:stack_coef -->
+| Run | alpha | ETS | Croston SBA | LightGBM | hệ số chặn | Dòng OOF |
+|---|---|---|---|---|---|---|
+| tes-20261118T083859Z-867b564-stack | 0,1 | 0,5429 | 0,1377 | 0,3713 | −0,0050 | 1.707.440 |
+| val-20261118T083718Z-867b564-stack | 0,1 | 0,5429 | 0,1377 | 0,3713 | −0,0050 | 1.707.440 |
+<!-- /TABLE -->
+
+### 4.7. So với pilot 1.200 chuỗi
+
+Trên Test, macro-RMSSE toàn bộ dữ liệu cao hơn pilot khoảng 0,006–0,007 cho ETS, Croston SBA và LightGBM (0,758 so với 0,752; 0,769 so với 0,762; 0,775 so với 0,768), còn Seasonal Naive không đổi (0,997). Thứ tự giữa bốn mô hình cơ sở giống pilot. Mẫu pilot lệch nhẹ về phía chuỗi gián đoạn (43,3% so với 39,1% chuỗi có trên 80% ngày bán 0), nên kết quả toàn bộ dữ liệu là ước lượng đại diện hơn; việc thứ hạng giữ nguyên cho thấy mẫu 1.200 chuỗi đủ để chọn mô hình.
+
+**Giới hạn của thực nghiệm.** (i) Một cửa sổ Test 28 ngày; các chênh lệch nhỏ đổi chiều giữa Validation và Test. (ii) Khác biệt input giữa mô hình cục bộ (chỉ lịch sử doanh số) và LightGBM (thêm giá/lịch/SNAP/nhóm). (iii) Giả định giá ngày dự báo được biết trước. (iv) Khoảng tin cậy bootstrap chỉ phản ánh biến thiên giữa các chuỗi trong một cửa sổ; các chuỗi không độc lập (cùng cửa hàng, cùng ngày) nên khoảng thực tế rộng hơn. (v) Runtime local và global khác phạm vi; stacking chạy trên máy khác với các mô hình cơ sở. (vi) Nhãn Test của 1.200 chuỗi pilot (3,9% số chuỗi) đã được xem trước khi chọn năm mô hình; tag `config-freeze` hiện tại được tạo lại ngày 18/11/2026 cho cấu hình toàn bộ dữ liệu (tag cũ của pilot đã gỡ), các SHA của run pilot ghi ở `configs/freeze.yaml` và `results/pre_rewrite_sha_map.csv`. (vii) Bộ gộp stacking chỉ có hai mốc backtest và được khớp theo sai số cấp đáy, không theo WRMSSE. (viii) Phân nhóm nhu cầu tính cả ngày 0 trước lần bán đầu tiên (độ bền ở Bảng 7d). (ix) Việc kiểm tra bằng AI không thay thế đối chiếu và review của các thành viên.
 
 ## 5. Kết luận và hướng phát triển
 
-Trên mẫu 1.200 chuỗi Walmart M5 với horizon 28 ngày: (Q1) mọi mô hình học/thống kê đều cải thiện rõ so với Seasonal Naive, khoảng 22–25% macro-RMSSE trên Test; (Q2) ETS và Croston vượt các mô hình global ở nhóm chuỗi gián đoạn mạnh, còn ở nhóm ít số 0 các mô hình gần nhau; RMSE gộp không cho thứ hạng ổn định giữa Validation và Test; (Q3) Croston và Seasonal Naive gần như không tốn thời gian, ETS chậm hơn LightGBM hơn một bậc độ lớn (≈355 giây thực so với ≈10 giây) cho mức cải thiện nhỏ, CatBoost mặc định chậm nhất; (Q4) cơ chế phù hợp: làm mượt mạnh (ETS), phân tách nhu cầu/khoảng cách (Croston), mức doanh số trượt chi phối dự báo global (importance, hệ số LR). Mô hình đứng đầu theo tiêu chí đã chốt là ETS, nhưng chênh lệch với nhóm đầu nhỏ và chỉ dựa trên một cửa sổ.
+Trên toàn bộ 30.490 chuỗi Walmart M5 với horizon 28 ngày: (Q1) cả bốn mô hình giảm khoảng 22–24% macro-RMSSE so với Seasonal Naive; (Q2) ở hàng bán thưa, các mô hình cục bộ và stacking tốt hơn rõ LightGBM, còn ở hàng bán đều Croston SBA kém nhất vì không có chu kỳ tuần; (Q3) Croston SBA gần như không tốn thời gian, LightGBM mất vài phút, ETS mất khoảng 2,5 giờ với 4 tiến trình, và stacking cần cả ba; (Q4) cơ chế phù hợp: làm mượt mạnh (ETS), cập nhật theo lần có nhu cầu (Croston SBA), mức doanh số trượt chi phối dự báo global (LightGBM); (Q5) ở các cấp tổng hợp thứ hạng đổi mạnh: LightGBM vượt các mô hình cục bộ, Croston SBA kém nhất. Stacking lai — gộp ETS, Croston SBA và LightGBM — là phương án cân bằng nhất trên Test: macro-RMSSE thấp nhất (0,757) và WRMSSE thấp nhất (0,668); tuy nhiên chênh lệch với ETS ở cấp đáy rất nhỏ và đổi chiều trên Validation. Kết quả trên tập kiểm tra dựa trên một cửa sổ 28 ngày.
 
-Giới hạn: mẫu và cửa sổ đánh giá đơn, giả định giá tương lai, khác biệt input local/global, chưa đo chi phí tồn kho nên chưa có kết luận về lợi ích kinh doanh hay giảm tồn kho; WRMSSE không được tính.
+Giới hạn: cửa sổ đánh giá đơn, giả định giá tương lai, khác biệt input local/global, nhãn Test của mẫu pilot đã được xem trước khi chọn mô hình, chưa đo chi phí tồn kho nên chưa có kết luận về lợi ích kinh doanh hay giảm tồn kho.
 
-Hướng phát triển: rolling-origin trên nhiều mùa và khoảng tin cậy phụ thuộc thời gian; mở rộng mẫu và đánh giá phân cấp theo WRMSSE; Test độc lập cho các phần tùy chọn (Tuned, SBA, ablation, stacking) sau khi chốt `config-freeze-v2`, thêm mốc backtest cho stacking; mô phỏng quyết định tồn kho với chi phí thực; dự báo xác suất. Ưu tiên theo hạn chế quan sát được: rolling-origin trước, rồi Test độc lập cho ablation giá/sự kiện.
+Hướng phát triển ưu tiên kiểm định cuốn chiếu (rolling-origin) trên nhiều mùa để xem thứ hạng có ổn định theo thời gian hay không. Các hướng tiếp theo gồm khớp bộ gộp stacking theo WRMSSE hoặc theo từng cấp và thêm mốc backtest, thêm chu kỳ tuần cho Croston (ví dụ nhân hệ số mùa) để khắc phục điểm yếu ở cấp tổng hợp, xây dựng khoảng tin cậy có xét phụ thuộc theo thời gian, mô phỏng quyết định tồn kho với chi phí thực và dự báo xác suất.
 
 ## Tài liệu tham khảo
 

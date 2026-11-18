@@ -31,6 +31,27 @@ LABEL = {"seasonal_naive": "Seasonal Naive", "linear_regression": "Linear Regres
          "lightgbm_tuned": "LightGBM Tuned", "stacking": "Stacking"}
 
 
+# label offsets (points) so the near-equal cluster LightGBM / XGBoost / Linear Regression stays readable; others default above
+LABEL_OFFSET = {"lightgbm": (-8, 9, "right"), "xgboost": (0, -15, "center"), "linear_regression": (8, 9, "left"),
+                "croston": (0, -15, "center"), "ets": (0, -15, "center"), "catboost": (0, 9, "right")}
+
+
+def tradeoff_figure(rt, tag):
+    """RMSSE versus fit+predict time (rt: model, fit_predict_s, macro_rmsse)."""
+    fig, ax = plt.subplots(figsize=(7, 4.5))
+    for _, r in rt.iterrows():
+        x = max(r["fit_predict_s"], 1e-3)
+        dx, dy, ha = LABEL_OFFSET.get(r["model"], (0, 9, "center"))
+        ax.scatter(x, r["macro_rmsse"])
+        ax.annotate(LABEL.get(r["model"], r["model"]), (x, r["macro_rmsse"]), xytext=(dx, dy), textcoords="offset points", ha=ha, fontsize=8)
+    ax.set_xscale("log")
+    ax.set_xlabel("fit+predict (giây, thang log; không cùng phạm vi giữa mô hình cục bộ/global)")
+    ax.set_ylabel("RMSSE macro")
+    ax.set_title(f"Độ chính xác và thời gian — {tag}")
+    ax.margins(x=0.12, y=0.12)
+    return fig
+
+
 def win_rates(mae, models, baseline="seasonal_naive"):
     """Per model: share of series with a lower MAE than the baseline, share of exact ties and the median MAE difference."""
     return pd.DataFrame({m: {"win_rate_vs_snaive": float((mae[m] < mae[baseline]).mean()),
@@ -119,14 +140,7 @@ def main():
                      "macro_rmsse": float(overall.loc[m, "macro_rmsse"]), "macro_mae": float(overall.loc[m, "macro_mae"])})
     rt = pd.DataFrame(rows)
     rt.round(3).to_csv(a.tables / f"{tag}_runtime_tradeoff.csv", index=False)
-    fig, ax = plt.subplots(figsize=(6, 4))
-    for _, r in rt.iterrows():
-        ax.scatter(max(r["fit_predict_s"], 1e-3), r["macro_rmsse"])
-        ax.annotate(LABEL.get(r["model"], r["model"]), (max(r["fit_predict_s"], 1e-3), r["macro_rmsse"]), fontsize=7)
-    ax.set_xscale("log")
-    ax.set_xlabel("fit+predict (giây, thang log; không cùng phạm vi giữa mô hình cục bộ/global)")
-    ax.set_ylabel("RMSSE macro")
-    ax.set_title(f"Độ chính xác và thời gian — {tag}")
+    fig = tradeoff_figure(rt, tag)
     savefig(fig, a.figures / f"{tag}_accuracy_runtime.png")
 
     # 5. win-rate versus Seasonal Naive (per-series MAE; descriptive, series are not independent)

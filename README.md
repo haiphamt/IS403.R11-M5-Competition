@@ -35,6 +35,10 @@ huấn luyện và dự báo trên toàn mẫu (CPU 4 lõi trên Kaggle), không
 trên một cửa sổ 28 ngày. Về chi phí chạy, Croston đạt RMSSE trung bình 0,764 trong khoảng 1,4 giây, gần bằng ETS (0,752)
 nhưng nhanh hơn khoảng 750 lần (1.026,2 giây so với 1,4 giây); với hàng bán không đều, đây là lựa chọn nên thử trước các mô hình cây.
 
+Phần tùy chọn trên Test (macro-RMSSE; chạy 18/11/2026, máy cục bộ, sau khi nhãn Test lõi đã mở): Croston SBA 0,762, LightGBM bỏ giá/sự kiện 0,766,
+stacking 0,769, LightGBM Tuned 0,770 (không hơn LightGBM mặc định 0,768; lợi thế trên Validation biến mất). Không mô hình tùy chọn nào vượt ETS (0,752);
+chi tiết và khoảng tin cậy ở báo cáo mục 3.10 (Bảng 3d, 3e).
+
 - Báo cáo: [`report/draft_report.md`](report/draft_report.md); slide: `report/slides/m5_nhom6.pptx`; hỏi đáp: `report/qa.md`.
 - Dự báo và metrics theo `run_id`: `results/runs/`; bảng/hình: `results/tables/{validation,test}/`, `results/figures/`.
 - Smoke reproduction: `results/tables/f10_smoke_reproduction.md` (tập con, không phải tái lập toàn bộ).

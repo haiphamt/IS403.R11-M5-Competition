@@ -32,6 +32,17 @@ class TestBootstrap(unittest.TestCase):
         mod = load("bootstrap_ci")
         np.testing.assert_array_equal(mod.bootstrap_means(wide, 50, 7), mod.bootstrap_means(wide, 50, 7))
 
+    def test_optional_pairs_cover_every_listed_model_and_keep_the_sign(self):
+        mod = load("bootstrap_ci")
+        base = np.random.default_rng(2).uniform(0.5, 1.5, 200)
+        names = {m for pair in mod.OPT_PAIRS for m in pair}
+        wide = pd.DataFrame({m: base + 0.02 * i for i, m in enumerate(sorted(names))})  # alphabetical order = increasing error
+        out = mod.pair_summary(wide, mod.OPT_PAIRS, draws=200, seed=1)
+        self.assertEqual(len(out), len(mod.OPT_PAIRS))
+        for r in out.itertuples():
+            self.assertEqual(r.diff < 0, r.first < r.second)
+            self.assertTrue(r.ci_low <= r.diff <= r.ci_high or abs(r.diff) < 1e-9)
+
 
 class TestClassRobustness(unittest.TestCase):
     def test_leading_zeros_are_dropped_from_the_after_first_sale_share(self):

@@ -61,7 +61,7 @@ OPT_NOTE = {"croston_sba": "X01", "lightgbm_noprice": "X02", "lightgbm_tuned": "
 
 
 def val_optional():
-    """Validation scores of the optional models next to their core references (Test of optional models is not run)."""
+    """Validation scores of the optional models next to their core references (see test_optional for Test)."""
     rows = pd.concat([pd.read_csv(p / "metrics_summary.csv") for p in sorted(RUNS.glob("val-*"))]).set_index("model")
     names = [m for m in ["lightgbm", "lightgbm_tuned", "lightgbm_noprice", "croston", "croston_sba", "stacking"] if m in rows.index]
     d = rows.loc[names]
@@ -70,6 +70,33 @@ def val_optional():
                         "RMSSE (macro)": d["macro_rmsse"].values, "fit+predict (s)": [f"{v:.1f}".replace(".", ",") for v in d["fit_predict_s"]],
                         "Ghi chú": [OPT_NOTE.get(m, "tham chiếu lõi") for m in names]})
     return md(out, "{:.4f}")
+
+
+def test_optional():
+    """Validation and Test scores of the optional models next to the core references they are compared with."""
+    summ = lambda g: pd.concat([pd.read_csv(p / "metrics_summary.csv") for p in sorted(RUNS.glob(g))]).set_index("model")
+    val, tst = summ("val-*"), summ("tes-*")
+    names = ["ets", "lightgbm", "lightgbm_tuned", "lightgbm_noprice", "croston", "croston_sba", "stacking"]
+    lab = {**L, **OPT_LABEL}
+    out = pd.DataFrame({"Mô hình": [lab[m] for m in names], "RMSSE Validation": val.loc[names, "macro_rmsse"].values,
+                        "RMSSE Test": tst.loc[names, "macro_rmsse"].values, "MAE Test (macro)": tst.loc[names, "macro_mae"].values,
+                        "RMSE Test (macro)": tst.loc[names, "macro_rmse"].values, "RMSE Test (gộp)": tst.loc[names, "pooled_rmse"].values,
+                        "fit+predict Test (s)": [f"{v:.1f}".replace(".", ",") for v in tst.loc[names, "fit_predict_s"]],
+                        "Ghi chú": [OPT_NOTE.get(m, "tham chiếu lõi") for m in names]})
+    return md(out)
+
+
+def optional_pairs():
+    lab = {**L, **OPT_LABEL}
+    d = {sp: pd.read_csv(T / sp / f"{sp}_bootstrap_optional_pairs.csv").set_index(["first", "second"]) for sp in ("validation", "test")}
+    rows = []
+    for first, second in d["test"].index:  # pair order of OPT_PAIRS, Validation row then Test row
+        for sp, label in (("validation", "Validation"), ("test", "Test")):
+            r = d[sp].loc[(first, second)]
+            rows.append({"Cặp (thứ nhất − thứ hai)": f"{lab[first]} − {lab[second]}", "Tập": label, "Chênh": num(f"{r['diff']:+.4f}"),
+                         "KTC 95%": f"[{num(f'{r.ci_low:+.4f}')}; {num(f'{r.ci_high:+.4f}')}]",
+                         "Khoảng chứa 0": "có" if r.ci_low <= 0 <= r.ci_high else "không"})
+    return md(pd.DataFrame(rows))
 
 
 def bootstrap(split):
@@ -103,6 +130,10 @@ def class_after_first_sale(split):
 def table(name):
     if name == "val_optional":
         return val_optional()
+    if name == "test_optional":
+        return test_optional()
+    if name == "optional_pairs":
+        return optional_pairs()
     if name in ("val_bootstrap", "test_bootstrap"):
         return bootstrap(name.split("_")[0].replace("val", "validation"))
     if name == "bootstrap_pairs":
@@ -129,7 +160,7 @@ def table(name):
         for p in sorted(RUNS.glob(f"{split[:3]}-*")):
             t = json.loads((p / "timings.json").read_text())
             for m, v in t.items():
-                if isinstance(v, dict) and "n_negative_raw_predictions" in v:
+                if isinstance(v, dict) and "n_negative_raw_predictions" in v and m in L:  # core models only: optional runs have their own table
                     rows.append({"Mô hình": L[m], "Số dự báo âm trước khi cắt về 0 (trên 33.600)": v["n_negative_raw_predictions"]})
         return md(pd.DataFrame(rows))
     if base == "weekday":
@@ -174,7 +205,7 @@ def table(name):
         rows = []
         for p in sorted(RUNS.glob("*")):
             e = json.loads((p / "environment.json").read_text())
-            rows.append({"run_id": e["run_id"], "split": e["split"], "origin": f"d_{e['origin_day']}", "mô hình": ", ".join(L.get(m, m) for m in e["models"]),
+            rows.append({"run_id": e["run_id"], "split": e["split"], "origin": f"d_{e['origin_day']}", "mô hình": ", ".join({**L, **OPT_LABEL}.get(m, m) for m in e["models"]),
                          "SHA mã": e["git_sha"][:7], "CPU": e.get("cpu_count", "máy cục bộ"), "Python": e.get("python", "n/a").split()[0]})
         return md(pd.DataFrame(rows))
     raise KeyError(name)

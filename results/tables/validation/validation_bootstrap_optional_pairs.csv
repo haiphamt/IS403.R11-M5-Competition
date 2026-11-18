@@ -1,0 +1,9 @@
+first,second,diff,ci_low,ci_high,share_draws_first_better
+lightgbm_tuned,lightgbm,-0.004863,-0.007527,-0.00244,0.9995
+lightgbm_noprice,lightgbm,-0.001728,-0.003875,0.000392,0.9425
+croston_sba,croston,-0.002169,-0.002961,-0.001359,1.0
+croston_sba,ets,0.013204,0.006417,0.020212,0.0
+stacking,lightgbm_tuned,0.007166,0.005021,0.00933,0.0
+stacking,lightgbm,0.002303,-0.0001,0.004501,0.0285
+stacking,ets,0.022573,0.01613,0.029108,0.0
+lightgbm_tuned,ets,0.015407,0.009082,0.021526,0.0

@@ -1,4 +1,8 @@
-"""Build the seminar deck (pptx) from result tables; every number comes from results/tables/*.csv.
+"""Build the seminar deck (pptx) from result tables.
+
+Numbers about results come from results/tables/*.csv. Typed by hand (not read from a file): literature facts on slide 3
+(Makridakis et al. 2022: 42.840 series, 7,5%), the sample design on slide 4 (10 stores x 3 categories x 40, seed 42,
+split dates) and model settings on slides 5-8 (copied from configs/models/ and src/m5/).
 
     python scripts/build_slides.py            # needs results/tables/{validation,test}/ and results/figures/{validation,test}/
 Speaker notes carry the responsibility area of each slide. Time per slide is a suggestion only: the official
@@ -9,6 +13,8 @@ from pathlib import Path
 import pandas as pd
 from pptx import Presentation
 from pptx.util import Emu, Inches, Pt
+
+from build_report import num  # decimal comma and a true minus sign, same as the report tables
 
 ROOT = Path(__file__).resolve().parents[1]
 T, F = ROOT / "results" / "tables", ROOT / "results" / "figures"
@@ -53,7 +59,8 @@ def slide(title, notes, bullets=None, image=None, table=None, caption=None):
             gt.cell(0, j).text = str(c)
         for i, row in enumerate(table.itertuples(index=False), start=1):
             for j, v in enumerate(row):
-                gt.cell(i, j).text = f"{v:.3f}".replace(".", ",") if isinstance(v, float) else str(v)
+                # time columns "(s)" use 1 decimal like the report; other floats 3 decimals
+                gt.cell(i, j).text = num(f"{v:.1f}" if "(s)" in str(table.columns[j]) else f"{v:.3f}") if isinstance(v, float) else str(v)
         for r in gt.rows:
             for c in r.cells:
                 for para in c.text_frame.paragraphs:
@@ -69,13 +76,17 @@ def slide(title, notes, bullets=None, image=None, table=None, caption=None):
 def main():
     val, test = overall("validation"), overall("test")
     best_t = test["macro_rmsse"].idxmin()
-    snaive_t = test.loc["seasonal_naive"]
+    rep_ = pd.read_csv(T / "d02_sample_representativeness.csv", index_col=0)
+    zero_s = rep_.loc["zero_ratio", "sample"]
+    slowest = LABEL[test["fit_predict_s"].idxmax()]
+    wd = pd.read_csv(T / "test" / "test_mae_by_weekday.csv", index_col=0)["ets"]
+    wk = wd.drop(["Saturday", "Sunday"])
     slide("Dự báo nhu cầu bán lẻ M5: so sánh bảy mô hình", "Mở đầu (Tuấn Hải). Giới thiệu đề tài, nhóm, phạm vi: 28 ngày, 1.200 chuỗi.",
           ["IS403.R11 – Phân tích dữ liệu kinh doanh – Nhóm 6", "Dữ liệu Walmart M5, mẫu phân tầng 1.200 chuỗi, horizon 28 ngày",
            "Seasonal Naive, Linear Regression, ETS, Croston, LightGBM, XGBoost, CatBoost"])
     slide("Bài toán và động lực", "Tuấn Hải: đầu vào/ra, vì sao dự báo ảnh hưởng bổ sung hàng.",
           ["Đầu vào: lịch sử bán, lịch/sự kiện, SNAP, giá tuần", "Đầu ra: 28 dự báo điểm không âm cho mỗi chuỗi sản phẩm–cửa hàng",
-           "Thách thức: nhu cầu gián đoạn (70% ngày bán 0 trong mẫu), mùa vụ tuần, rò rỉ thông tin", "Chưa đo chi phí tồn kho: không tuyên bố tác động kinh doanh"])
+           f"Thách thức: nhu cầu gián đoạn ({zero_s:.0%} ngày bán 0 trong mẫu), mùa vụ tuần, rò rỉ thông tin", "Chưa đo chi phí tồn kho: không tuyên bố tác động kinh doanh"])
     slide("Nghiên cứu nền", "Thanh Tiền (S04) và từng chủ mô hình: M5 là bối cảnh, không phải thứ hạng để so trực tiếp.",
           ["Makridakis và cs. (2022): tổng kết M5, 42.840 chuỗi, WRMSSE", "Đội thắng dùng LightGBM; chỉ 7,5% đội vượt đối chuẩn thống kê tốt nhất",
            "ETS (Hyndman & Khandakar 2008), Croston (1972), boosting (Friedman 2001; Ke 2017; Chen 2016; Prokhorenkova 2018)",
@@ -84,7 +95,9 @@ def main():
     slide("Dữ liệu, mẫu và chia thời gian", "Tuấn Hải (D03), Thanh Tiền (D02/D07).",
           ["Mẫu: 10 cửa hàng × 3 category × 40 chuỗi, seed 42", "Train d_1–1885, Validation d_1886–1913, Test d_1914–1941",
            "Test mở sau tag config-freeze; refit trên d_1–1913", "Không chọn lại mẫu sau khi thấy kết quả"],
-          table=pd.DataFrame({"Chỉ tiêu": ["Chuỗi", "Tỷ lệ ngày 0", "Doanh số TB"], "Toàn bộ": ["30.490", "0,684", "1,122"], "Mẫu": ["1.200", "0,701", "1,019"]}))
+          table=pd.DataFrame({"Chỉ tiêu": ["Chuỗi", "Tỷ lệ ngày 0", "Doanh số TB"],
+                              **{k: [f"{int(rep_.loc['n_series', c]):,}".replace(",", "."), num(f"{rep_.loc['zero_ratio', c]:.3f}"), num(f"{rep_.loc['mean_sales', c]:.3f}")]
+                                 for k, c in (("Toàn bộ", "all"), ("Mẫu", "sample"))}}))
     slide("Đặc trưng và chống rò rỉ", "Thùy Trang (D04): lag ≥ 28, rolling shift 28, kiểm thử làm hỏng nhãn tương lai.",
           ["lag 28/35/42; rolling mean/std 7 và 28 sau shift 28", "Lịch, sự kiện, SNAP theo bang, giá tuần (NaN + price_missing)", "Dự báo trực tiếp 28 ngày từ origin",
            "Test: làm hỏng mọi nhãn sau origin, feature không đổi", "Giả định: giá ngày dự báo được biết trước"])
@@ -116,9 +129,10 @@ def main():
                    f"Hàng bán thường xuyên (tối đa 50% ngày không bán): ETS {c(lz['ets'])}, CatBoost {c(lz['catboost'])}",
                    "Chỉ là liên hệ trên một cửa sổ 28 ngày"])
     slide("Theo thứ trong tuần và horizon", "Thanh Tiền (F08).", image=F / "test" / "test_mae_by_horizon.png",
-          bullets=["MAE gộp theo horizon 1–28", "Sai số cao hơn vào cuối tuần (Thứ Bảy, Chủ nhật)"])
+          bullets=["MAE gộp theo horizon 1–28 (hình)", f"Sai số cao hơn vào cuối tuần: MAE của ETS Thứ Bảy {c(wd['Saturday'])}, Chủ nhật {c(wd['Sunday'])}, ngày thường {c(wk.min())}–{c(wk.max())}",
+                   "Cả bảy mô hình đều cao hơn vào cuối tuần (xem test_mae_by_weekday.csv)"])
     slide("Đánh đổi độ chính xác và thời gian", "Tuấn Hải/Thủy Tiên: không so trực tiếp runtime local và global.", image=F / "test" / "test_accuracy_runtime.png",
-          bullets=["Thời gian: local = tổng fit+predict từng chuỗi; global = fit toàn mẫu", "CatBoost mặc định chậm nhất trên CPU 4 lõi"])
+          bullets=["Thời gian: local = tổng fit+predict từng chuỗi; global = fit toàn mẫu", f"{slowest} mặc định chậm nhất trên CPU 4 lõi"])
     slide("Insight và giới hạn", "Thủy Tiên: kết luận gắn với bảng/hình; nêu giới hạn.",
           ["Một cửa sổ Test 28 ngày; mẫu 1.200 chuỗi", "Khác biệt input giữa local và global gây nhiễu thứ hạng", "Giả định giá tương lai; importance không phải nhân quả",
            "Phần tùy chọn: mới có Validation (Optuna, SBA, ablation, stacking); Test chưa chạy", "Smoke ≠ tái lập toàn bộ"])

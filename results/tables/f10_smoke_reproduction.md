@@ -3,7 +3,7 @@
 **Đây là smoke, không phải tái lập toàn bộ thực nghiệm.** Mục đích: kiểm tra pipeline chạy từ đầu đến cuối sau khi clone mới.
 
 - Ngày chạy: 15/11/2026. Máy: Windows 11, 8 luồng CPU (khác Kaggle 4 lõi).
-- Clone mới từ GitHub, nhánh `m5-end-to-end` tại SHA `4994dda`, thư mục tạm không chứa kết quả cũ.
+- Clone mới từ GitHub, nhánh `m5-end-to-end` tại SHA `4994dda` (SHA trước khi viết lại lịch sử; commit tương đương hiện nay là `b080335`, xem `configs/freeze.yaml`), thư mục tạm không chứa kết quả cũ.
 - Venv mới (Python 3.11), cài bằng `pip` với phiên bản mới nhất tương thích (không dùng bản ghim Kaggle vì các phiên bản ghim dành cho Python 3.13):
   numpy 2.4.6, pandas 2.3.3, scikit-learn 1.9.1, statsforecast 2.1.1, lightgbm 4.7.0, xgboost 3.2.0, catboost 1.2.10.
 - Bước 1: `python -m unittest discover -s tests` → **42 test OK** (25 giây).

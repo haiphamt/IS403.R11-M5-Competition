@@ -23,7 +23,9 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
 from m5 import evaluate, optional  # noqa: E402
+from m5.data import load_raw_data  # noqa: E402
 from m5.schema import SPLITS, validate_predictions  # noqa: E402
+from m5.split import to_wide  # noqa: E402
 
 BASES = ["linear_regression", "lightgbm", "xgboost", "catboost"]
 
@@ -78,8 +80,10 @@ def main():
     out = out.assign(run_id=run_id, model="stacking", split=a.split)[["run_id", "model", "split", "series_id", "d", "horizon", "y_pred"]]
     validate_predictions(out, a.split, ids)
 
-    panel = optional.load_sample_panel(a.data_dir, manifest=a.manifest)
-    actuals = pd.DataFrame(panel.y, index=panel.series_ids, columns=[f"d_{n}" for n in range(1, panel.y.shape[1] + 1)]).loc[ids]
+    sales = load_raw_data(a.data_dir, table_names=("sales_train_evaluation",))["sales_train_evaluation"]  # labels only: no price panel needed
+    actuals = to_wide(sales).loc[ids]
+    if a.manifest is not None and set(ids) != set(pd.read_csv(a.manifest)["series_id"]):
+        raise SystemExit("base forecasts do not cover exactly the series of --manifest")
     per_series, summary = evaluate.evaluate(out, actuals, a.split)
     summary["fit_predict_s"] = meta_s
     run = a.out / run_id

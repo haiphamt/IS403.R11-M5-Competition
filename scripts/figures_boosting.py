@@ -44,6 +44,8 @@ def importance(runs, out):
     fig, axes = plt.subplots(1, 3, figsize=(14, 4))
     for ax, (name, f) in zip(axes, files.items()):
         path = next((Path(r) / f for r in runs if (Path(r) / f).exists()), None)
+        if path is None:
+            raise FileNotFoundError(f"không run nào trong {list(runs)} có {f} (cần cho importance của {name})")
         d = pd.read_csv(path)
         d["share"] = d["importance"] / d["importance"].sum()
         d = d.sort_values("share").tail(10)

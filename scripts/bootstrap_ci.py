@@ -13,8 +13,10 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-PAIRS = [("croston", "lightgbm"), ("croston", "linear_regression"), ("lightgbm", "xgboost"), ("lightgbm", "catboost"), ("xgboost", "catboost")]
-ORDER = ["seasonal_naive", "linear_regression", "ets", "croston", "lightgbm", "xgboost", "catboost"]
+PAIRS = [("croston_sba", "lightgbm"), ("stacking", "lightgbm"), ("stacking", "croston_sba"), ("croston", "lightgbm"), ("croston", "linear_regression"), ("lightgbm", "xgboost"), ("lightgbm", "catboost"), ("xgboost", "catboost")]
+ORDER = ["seasonal_naive", "linear_regression", "ets", "croston", "croston_sba", "lightgbm", "xgboost", "catboost", "stacking"]  # tables keep the models present, in this order
+OPT_PAIRS = [("lightgbm_tuned", "lightgbm"), ("lightgbm_noprice", "lightgbm"), ("croston_sba", "croston"), ("croston_sba", "ets"),
+             ("stacking", "lightgbm_tuned"), ("stacking", "lightgbm"), ("stacking", "ets"), ("lightgbm_tuned", "ets")]
 
 
 def bootstrap_means(wide, draws=2000, seed=42):
@@ -59,17 +61,27 @@ def main():
     ap.add_argument("--runs", nargs="+", required=True, type=Path)
     ap.add_argument("--out", required=True, type=Path)
     ap.add_argument("--draws", type=int, default=2000)
+    ap.add_argument("--optional-runs", nargs="*", default=[], type=Path, help="runs of the optional models: adds <split>_bootstrap_optional_pairs.csv")
     a = ap.parse_args()
     ps = pd.concat([pd.read_csv(r / "metrics_per_series.csv") for r in a.runs])
-    wide = ps.pivot(index="series_id", columns="model", values="rmsse")[ORDER]
+    wide = ps.pivot(index="series_id", columns="model", values="rmsse")
+    wide = wide[[m for m in ORDER if m in wide.columns]]
     if wide.isna().any().any():
         raise ValueError("RMSSE undefined for some series; the macro mean would change between draws")
     out = summarize(wide, draws=a.draws)
     a.out.mkdir(parents=True, exist_ok=True)
     out.round(6).to_csv(a.out / f"{a.split}_bootstrap_ci.csv", index=False)
-    pairs = pair_summary(wide, draws=a.draws)
+    pairs = pair_summary(wide, [p for p in PAIRS if set(p) <= set(wide.columns)], draws=a.draws)
     pairs.round(6).to_csv(a.out / f"{a.split}_bootstrap_pairs.csv", index=False)
     print(out.round(4).to_string(index=False)); print(pairs.round(4).to_string(index=False))
+    if a.optional_runs:  # same resampling (seed), so the pairs are comparable with the core tables
+        extra = pd.concat([pd.read_csv(r / "metrics_per_series.csv") for r in a.optional_runs]).pivot(index="series_id", columns="model", values="rmsse")
+        both = wide.join(extra)
+        if both.isna().any().any():
+            raise ValueError("RMSSE undefined for some series in the optional runs")
+        opt = pair_summary(both, OPT_PAIRS, draws=a.draws)
+        opt.round(6).to_csv(a.out / f"{a.split}_bootstrap_optional_pairs.csv", index=False)
+        print(opt.round(4).to_string(index=False))
 
 
 if __name__ == "__main__":

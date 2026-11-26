@@ -1,0 +1,2 @@
+n_series,n_with_leading_zeros,median_leading_days,mean_zero_share_all_days,mean_zero_share_after_first_sale,n_change_class,n_high_to_lower,n_low_zero_all_days,n_mid_zero_all_days,n_high_zero_all_days,n_low_zero_after_first_sale,n_mid_zero_after_first_sale,n_high_zero_after_first_sale
+30490,23511,452.0,0.683733,0.602028,7341,4421,6530,12053,11907,9919,13085,7486

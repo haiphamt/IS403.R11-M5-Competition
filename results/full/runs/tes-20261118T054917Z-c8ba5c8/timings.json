@@ -1,0 +1,40 @@
+{
+  "data_io_panel_s": 20.777349012999935,
+  "warmup_s": 10.06275446699999,
+  "feature_build_s": 45.707129922000036,
+  "seasonal_naive": {
+    "fit_predict_sum_s": 0.708990487986739,
+    "wall_s": 2.6160111540000344,
+    "workers": 4,
+    "n_series": 30490,
+    "n_fallback": 0,
+    "scope": "sum over series of per-series fit+predict, single thread each",
+    "n_negative_raw_predictions": 0
+  },
+  "ets": {
+    "fit_predict_sum_s": 35121.07162766095,
+    "wall_s": 8794.315322008,
+    "workers": 4,
+    "n_series": 30490,
+    "n_fallback": 0,
+    "scope": "sum over series of per-series fit+predict, single thread each",
+    "n_negative_raw_predictions": 16474
+  },
+  "croston_sba": {
+    "fit_predict_sum_s": 10.462568640956306,
+    "wall_s": 4.536617791000026,
+    "workers": 4,
+    "n_series": 30490,
+    "n_fallback": 0,
+    "scope": "sum over series of per-series fit+predict, single thread each",
+    "n_negative_raw_predictions": 0
+  },
+  "lightgbm": {
+    "fit_s": 226.82810179300031,
+    "predict_s": 1.5327383229996485,
+    "n_train_rows": 56650420,
+    "threads": 4,
+    "scope": "pooled model: fit + predict wall time (features timed separately)",
+    "n_negative_raw_predictions": 0
+  }
+}

@@ -26,41 +26,55 @@ MODELS = ["linear_regression", "lightgbm", "xgboost", "catboost", "lightgbm_nopr
 NOPRICE_EVENT = ["sell_price", "price_missing", "event_name_1", "event_type_1", "event_name_2", "event_type_2"]  # X02 ablation
 
 
+def _categorical(values, idx, n_series, per_day):
+    """Categorical column of n_series x len(idx) rows built from codes (no per-row Python strings: 30,490 series fit in RAM).
+
+    Categories are the sorted string values, as pd.Categorical(strings) would give, so codes match the earlier string build.
+    per_day=True: one value per calendar day (tiled over series); False: one value per series (repeated over days)."""
+    cats, codes = np.unique(np.asarray(values, dtype=str), return_inverse=True)
+    codes = np.tile(codes[idx], n_series) if per_day else np.repeat(codes, len(idx))
+    return pd.Categorical.from_codes(codes.astype(np.int16), categories=cats)
+
+
 def build_table(panel: Panel, origin, horizon=HORIZON):
     """Return (X_train, y_train, X_future, future_keys) for forecast origin ``origin``."""
     y = panel.y[:, :origin + horizon].copy()
     y[:, origin:] = np.nan  # forecast-period labels never enter any feature
     feats = lag_roll_features(y)
-    n = y.shape[0]
+    del y
+    n = panel.y.shape[0]
     cal = panel.calendar.iloc[:origin + horizon]
     idx = np.arange(FIRST_DAY_IDX, origin + horizon)
-    cols = {name: feats[name][:, idx].ravel() for name in LAG_ROLL}
+    cols = {name: feats.pop(name)[:, idx].ravel() for name in LAG_ROLL}
     cols["year"] = np.tile(cal["year"].to_numpy(float)[idx], n)
     cols["snap"] = panel.snap[:, idx].ravel()
     price = panel.price[:, idx].ravel()
     cols["sell_price"] = price
     cols["price_missing"] = np.isnan(price).astype(float)
+    del price
     for c in ("wday", "month", "event_name_1", "event_type_1", "event_name_2", "event_type_2"):
-        cols[c] = np.tile(cal[c].fillna("__NONE__").astype(str).to_numpy()[idx], n)
+        cols[c] = _categorical(cal[c].fillna("__NONE__").astype(str).to_numpy(), idx, n, per_day=True)
     for c in ("dept_id", "cat_id", "store_id", "state_id"):
-        cols[c] = np.repeat(panel.meta[c].to_numpy(), len(idx))
-    X = pd.DataFrame(cols)[FEATURES]
-    target_day = np.tile(idx + 1, n)
-    series = np.repeat(np.array(panel.series_ids), len(idx))
-    is_train = target_day <= origin
+        cols[c] = _categorical(panel.meta[c].to_numpy(), idx, n, per_day=False)
+    X = pd.DataFrame(cols, copy=False)[FEATURES]
+    del cols
+    is_train = np.tile(idx + 1 <= origin, n)
     X_train, X_future = X[is_train].reset_index(drop=True), X[~is_train].reset_index(drop=True)
+    del X
     if X_train[LAG_ROLL].isna().any().any() or X_future[LAG_ROLL].isna().any().any():
         raise ValueError("lag/rolling features contain NaN")
     y_train = panel.y[:, idx].ravel()[is_train]
-    keys = pd.DataFrame({"series_id": series[~is_train], "d_num": target_day[~is_train]})
+    fut_days = idx[idx + 1 > origin] + 1
+    keys = pd.DataFrame({"series_id": np.repeat(np.array(panel.series_ids), len(fut_days)), "d_num": np.tile(fut_days, n)})
     return X_train, y_train, X_future, keys
 
 
 def _as_category(X):
-    X = X.copy()
+    """Categorical columns with the categories actually present (same codes as building them from strings per frame)."""
+    X = X.copy(deep=False)  # only the categorical columns are replaced; no 6 GB copy of the numeric block on full data
     for c in CAT_COLS:
         if c in X.columns:
-            X[c] = pd.Categorical(X[c].astype(str))
+            X[c] = X[c].cat.remove_unused_categories() if isinstance(X[c].dtype, pd.CategoricalDtype) else pd.Categorical(X[c].astype(str))
     return X
 
 
@@ -96,7 +110,7 @@ def fit_predict(name, X_train, y_train, X_future, *, n_jobs=8, seed=SEED, lgbm_p
         from catboost import CatBoostRegressor
         model = CatBoostRegressor(random_seed=seed, thread_count=n_jobs, verbose=0,
                                   allow_writing_files=False, cat_features=CAT_COLS)
-        Xt, Xf = X_train, X_future
+        Xt, Xf = (X.astype({c: str for c in CAT_COLS}) for X in (X_train, X_future))  # CatBoost reads category values as strings
     else:
         raise ValueError(f"unknown model {name!r}")
     model.fit(Xt, y_train)

@@ -236,7 +236,7 @@ def main():
            "python": sys.version, "platform": platform.platform(), "machine": platform.machine(),
            "cpu_count": __import__("os").cpu_count(), "packages": package_versions(),
            "sample": {"n_series": len(ids), "manifest_sha256": manifest_hash(manifest[manifest["series_id"].isin(ids)]),
-                      "seed": 42, "per_stratum": 40},
+                      "manifest": Path(args.manifest).name},  # sample_series_ids.csv = 1,200 stratified (seed 42); full_series_ids_with_class.csv = all 30,490
            "data_dir": str(raw_dir), "data_sha256": {n: sha256(raw_dir / n) for n in raw_files},
            "models": args.models, "postprocessing": "clip y_pred at 0 for every model; no rounding",
            "args": {k: v for k, v in vars(args).items()}}

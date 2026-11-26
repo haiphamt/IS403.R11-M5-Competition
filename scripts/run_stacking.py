@@ -23,7 +23,9 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
 from m5 import evaluate, optional  # noqa: E402
+from m5.data import load_raw_data  # noqa: E402
 from m5.schema import SPLITS, validate_predictions  # noqa: E402
+from m5.split import to_wide  # noqa: E402
 
 BASES = ["linear_regression", "lightgbm", "xgboost", "catboost"]
 
@@ -43,28 +45,31 @@ def main():
     ap.add_argument("--base-runs", nargs="+", required=True, type=Path, help="run dirs holding the base forecasts of --split")
     ap.add_argument("--out", type=Path, default=ROOT / "results" / "runs")
     ap.add_argument("--data-dir", default=None)
+    ap.add_argument("--bases", nargs="+", default=BASES, help="base models of the stack (hybrid: ets croston_sba lightgbm)")
+    ap.add_argument("--manifest", type=Path, default=None, help="series list (default: the 1,200-series sample)")
     a = ap.parse_args()
+    bases = a.bases
     if a.split == "test" and not git("rev-parse", "-q", "--verify", "refs/tags/config-freeze-v2"):
         raise SystemExit("Test of the stack is locked: tag config-freeze-v2 not found.")
     lg = "lightgbm" if a.lgbm == "default" else "lightgbm_tuned"
-    cols = {"linear_regression": "linear_regression", "lightgbm": lg, "xgboost": "xgboost", "catboost": "catboost"}
+    cols = {b: lg if b == "lightgbm" else b for b in bases}
 
     files = [f for pat in a.oof for f in glob.glob(pat)]
     oof = pd.concat([pd.read_parquet(f) for f in files], ignore_index=True)
     wide = oof.pivot_table(index=["origin", "series_id", "d_num"], columns="model", values="y_pred").join(
         oof.drop_duplicates(["origin", "series_id", "d_num"]).set_index(["origin", "series_id", "d_num"])["y_true"])
     n_keys = len(wide)
-    wide = wide[[cols[b] for b in BASES] + ["y_true"]].rename(columns={v: k for k, v in cols.items()}).dropna().reset_index()
+    wide = wide[[cols[b] for b in bases] + ["y_true"]].rename(columns={v: k for k, v in cols.items()}).dropna().reset_index()
     if len(wide) != n_keys:  # a base model missing for some (origin, series, day) would silently shrink the meta training set
         raise SystemExit(f"{n_keys - len(wide)} OOF rows lack a forecast from at least one base model; refusing to fit on a partial set")
     t0 = time.perf_counter()
-    meta, alpha, cv = optional.fit_ridge_meta(wide, BASES)
+    meta, alpha, cv = optional.fit_ridge_meta(wide, bases)
     meta_s = time.perf_counter() - t0
     print(f"meta fitted on {len(wide):,} OOF rows, alpha={alpha}, CV rmse={cv}")
 
     pred = pd.concat([pd.read_parquet(r / "predictions.parquet") for r in a.base_runs], ignore_index=True)
-    pw = pred.pivot_table(index=["series_id", "d"], columns="model", values="y_pred")[[cols[b] for b in BASES]]
-    pw.columns = BASES
+    pw = pred.pivot_table(index=["series_id", "d"], columns="model", values="y_pred")[[cols[b] for b in bases]]
+    pw.columns = bases
     ids = sorted(pw.index.get_level_values(0).unique())
     stacked = np.maximum(meta.predict(pw.to_numpy(float)), 0)  # same clip-at-0 policy as every model
     start = SPLITS[a.split][0]
@@ -75,8 +80,10 @@ def main():
     out = out.assign(run_id=run_id, model="stacking", split=a.split)[["run_id", "model", "split", "series_id", "d", "horizon", "y_pred"]]
     validate_predictions(out, a.split, ids)
 
-    panel = optional.load_sample_panel(a.data_dir)
-    actuals = pd.DataFrame(panel.y, index=panel.series_ids, columns=[f"d_{n}" for n in range(1, panel.y.shape[1] + 1)]).loc[ids]
+    sales = load_raw_data(a.data_dir, table_names=("sales_train_evaluation",))["sales_train_evaluation"]  # labels only: no price panel needed
+    actuals = to_wide(sales).loc[ids]
+    if a.manifest is not None and set(ids) != set(pd.read_csv(a.manifest)["series_id"]):
+        raise SystemExit("base forecasts do not cover exactly the series of --manifest")
     per_series, summary = evaluate.evaluate(out, actuals, a.split)
     summary["fit_predict_s"] = meta_s
     run = a.out / run_id
@@ -84,14 +91,14 @@ def main():
     out.to_parquet(run / "predictions.parquet", index=False)
     per_series.to_csv(run / "metrics_per_series.csv", index=False)
     summary.to_csv(run / "metrics_summary.csv", index=False)
-    coef = pd.DataFrame({"feature": BASES + ["intercept"], "coefficient": list(meta.coef_) + [float(meta.intercept_)]})
+    coef = pd.DataFrame({"feature": bases + ["intercept"], "coefficient": list(meta.coef_) + [float(meta.intercept_)]})
     coef.to_csv(run / "diag_stacking_coefficients.csv", index=False)
     (run / "timings.json").write_text(json.dumps({"stacking": {"fit_s": meta_s, "predict_s": 0.0, "n_oof_rows": len(wide),
         "scope": "Ridge meta fit on Train out-of-fold backtests (base fits not included)", "n_negative_raw_predictions": int((meta.predict(pw.to_numpy(float)) < 0).sum())}}, indent=2))
     (run / "environment.json").write_text(json.dumps({
         "run_id": run_id, "split": a.split, "origin_day": start - 1, "git_sha": sha, "utc": datetime.now(timezone.utc).isoformat(),
         "models": ["stacking"], "meta": {"alpha": alpha, "cv_rmse_leave_one_origin_out": {str(k): v for k, v in cv.items()},
-        "lgbm_in_stack": a.lgbm, "bases": BASES, "oof_files": [Path(f).name for f in files], "oof_rows": len(wide), "base_runs": [r.name for r in a.base_runs]},
+        "lgbm_in_stack": a.lgbm, "bases": bases, "oof_files": [Path(f).name for f in files], "oof_rows": len(wide), "base_runs": [r.name for r in a.base_runs]},
         "postprocessing": "clip y_pred at 0; no rounding"}, indent=2))
     print(summary.round(4).to_string(index=False)); print(coef.round(4).to_string(index=False)); print("saved", run)
 

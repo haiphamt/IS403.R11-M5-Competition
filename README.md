@@ -33,7 +33,7 @@ theo ngày cho từng sản phẩm tại từng cửa hàng trong **28 ngày ti�
 Thời gian: mô hình cục bộ là tổng thời gian huấn luyện và dự báo của từng chuỗi (3 tiến trình), mô hình toàn cục là thời gian
 huấn luyện và dự báo trên toàn mẫu (CPU 4 lõi trên Kaggle), không so trực tiếp. Chênh lệch giữa nhóm đầu rất nhỏ và chỉ dựa
 trên một cửa sổ 28 ngày. Về chi phí chạy, Croston đạt RMSSE trung bình 0,764 trong khoảng 1,4 giây, gần bằng ETS (0,752)
-nhưng nhanh hơn khoảng 750 lần (1.026,2 giây so với 1,4 giây); với hàng bán không đều, đây là lựa chọn nên thử trước các mô hình cây.
+nhưng nhanh hơn khoảng 730 lần (1.026,2 giây so với 1,4 giây); với hàng bán không đều, đây là lựa chọn nên thử trước các mô hình cây.
 
 - Báo cáo: [`report/draft_report.md`](report/draft_report.md); slide: `report/slides/m5_nhom6.pptx`; hỏi đáp: `report/qa.md`.
 - Dự báo và metrics theo `run_id`: `results/runs/`; bảng/hình: `results/tables/{validation,test}/`, `results/figures/`.

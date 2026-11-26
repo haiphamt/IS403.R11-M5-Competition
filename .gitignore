@@ -14,9 +14,7 @@ kaggle.json
 
 # Raw and processed datasets
 data/raw/*
-!data/raw/.gitkeep
 data/processed/*
-!data/processed/.gitkeep
 
 # Saved model artifacts
 *.pkl

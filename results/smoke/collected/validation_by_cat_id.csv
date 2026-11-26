@@ -1,0 +1,8 @@
+cat_id,model,mae,rmse,rmsse,r2
+FOODS,seasonal_naive,1.3378,1.9189,1.2035,-2.6695
+FOODS,linear_regression,1.0562,1.4078,0.8132,-0.3783
+FOODS,ets,0.9849,1.351,0.7768,-0.1409
+FOODS,croston,1.0077,1.348,0.7727,-0.0843
+FOODS,lightgbm,1.0452,1.4004,0.8094,-0.35
+FOODS,xgboost,1.0563,1.3986,0.8062,-0.3126
+FOODS,catboost,1.0288,1.3756,0.7958,-0.2451

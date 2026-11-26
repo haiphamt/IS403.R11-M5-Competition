@@ -1,0 +1,64 @@
+{
+  "data_io_panel_s": 29.40628279998782,
+  "warmup_s": 21.771453800000018,
+  "feature_build_s": 0.1740284999832511,
+  "seasonal_naive": {
+    "fit_predict_sum_s": 0.0031938999600242823,
+    "wall_s": 19.793496899976162,
+    "workers": 2,
+    "n_series": 24,
+    "n_fallback": 0,
+    "scope": "sum over series of per-series fit+predict, single thread each",
+    "n_negative_raw_predictions": 0
+  },
+  "linear_regression": {
+    "fit_s": 3.097520999988774,
+    "predict_s": 0.03229639999335632,
+    "n_train_rows": 43920,
+    "threads": 8,
+    "scope": "pooled model: fit + predict wall time (features timed separately)",
+    "n_negative_raw_predictions": 5
+  },
+  "ets": {
+    "fit_predict_sum_s": 35.44849279994378,
+    "wall_s": 35.24916570002097,
+    "workers": 2,
+    "n_series": 24,
+    "n_fallback": 0,
+    "scope": "sum over series of per-series fit+predict, single thread each",
+    "n_negative_raw_predictions": 0
+  },
+  "croston": {
+    "fit_predict_sum_s": 0.07417050001095049,
+    "wall_s": 32.64635249998537,
+    "workers": 2,
+    "n_series": 24,
+    "n_fallback": 0,
+    "scope": "sum over series of per-series fit+predict, single thread each",
+    "n_negative_raw_predictions": 0
+  },
+  "lightgbm": {
+    "fit_s": 9.661308800015831,
+    "predict_s": 0.1340976000064984,
+    "n_train_rows": 43920,
+    "threads": 8,
+    "scope": "pooled model: fit + predict wall time (features timed separately)",
+    "n_negative_raw_predictions": 0
+  },
+  "xgboost": {
+    "fit_s": 22.00391309999395,
+    "predict_s": 0.09604190001846291,
+    "n_train_rows": 43920,
+    "threads": 8,
+    "scope": "pooled model: fit + predict wall time (features timed separately)",
+    "n_negative_raw_predictions": 0
+  },
+  "catboost": {
+    "fit_s": 386.2599091999873,
+    "predict_s": 0.17788410000503063,
+    "n_train_rows": 43920,
+    "threads": 8,
+    "scope": "pooled model: fit + predict wall time (features timed separately)",
+    "n_negative_raw_predictions": 0
+  }
+}
